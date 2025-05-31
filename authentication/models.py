@@ -48,7 +48,6 @@ class Faskes(models.Model):
     joined_date = models.DateField(auto_now_add=True)
     def __str__(self):
         return self.nama_faskes
-    
 
 class Departemen(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)

@@ -8,7 +8,16 @@
             <h1 class="text-2xl sm:text-3xl font-bold text-purple-700">{{ page_title }}</h1>
             <p class="text-sm text-gray-500">Kejadian: <strong class="text-purple-600">{{ event.disaster_type }}</strong> ({{ event.location_description }})</p>
         </div>
-         <a href="{% url 'emergency:activate_emergency' %}" class="mt-2 sm:mt-0 text-sm text-indigo-600 hover:underline">« Kembali ke Aktivasi Darurat</a>
+        <div class="flex flex-col sm:flex-row sm:items-center mt-2 sm:mt-0 space-y-2 sm:space-y-0 sm:space-x-3">
+            <a href="{% url 'emergency:resource_tracking_dashboard' event_id=event.id %}" class="text-sm text-teal-600 hover:text-teal-800 bg-teal-50 px-3 py-1.5 rounded-md font-medium ring-1 ring-teal-200 hover:ring-teal-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Lacak Semua Sumber Daya
+            </a>
+            <a href="{% url 'emergency:activate_emergency' %}" class="text-sm text-indigo-600 hover:underline">« Kembali ke Aktivasi Darurat</a>
+        </div>    
     </div>
 
     {% include "_messages.html" %}

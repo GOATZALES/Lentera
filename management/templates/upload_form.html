@@ -1,0 +1,502 @@
+<!-- templates/management/upload_form.html - Versi yang diperbaiki -->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Sertifikat Medis</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+        .upload-area:hover {
+            border-color: #0056b3;
+            background: #e3f2fd;
+        }
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .result-card {
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+        }
+        .confidence-high { color: #28a745; }
+        .confidence-medium { color: #ffc107; }
+        .confidence-low { color: #fd7e14; }
+        .confidence-none { color: #dc3545; }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner-container {
+            text-align: center;
+            color: white;
+        }
+        
+        .category-badge {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin: 2px;
+            display: inline-block;
+        }
+        
+        .debug-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.8em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- CSRF Token -->
+    {% csrf_token %}
+    
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="fas fa-certificate me-2"></i>
+                            Analisis Sertifikat Medis
+                        </h3>
+                        <p class="mb-0">Upload gambar sertifikat untuk analisis otomatis menggunakan AI</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Debug Info Panel -->
+                        <div class="alert alert-info" id="debugPanel" style="display: none;">
+                            <h6><i class="fas fa-bug me-2"></i>Debug Information</h6>
+                            <div id="debugContent"></div>
+                        </div>
+                        
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="upload-area" id="uploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                <h5>Drag & Drop gambar sertifikat di sini</h5>
+                                <p class="text-muted">atau klik untuk memilih file</p>
+                                <input type="file" id="certificate_image" name="certificate_image" 
+                                       accept="image/*" style="display: none;">
+                                <small class="text-muted">
+                                    Format yang didukung: JPEG, PNG, WebP (max 10MB)
+                                </small>
+                            </div>
+                            
+                            <div id="imagePreview" class="mt-3 text-center" style="display: none;">
+                                <img id="previewImg" class="preview-image" alt="Preview">
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-outline-danger" id="removeImage">
+                                        <i class="fas fa-times"></i> Hapus Gambar
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 text-center">
+                                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                                    <i class="fas fa-magic me-2"></i>
+                                    Analisis Sertifikat
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary ms-2" id="debugBtn">
+                                    <i class="fas fa-bug"></i> Debug
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Results Section -->
+                <div id="resultsSection" class="mt-4" style="display: none;">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Hasil Analisis
+                            </h4>
+                        </div>
+                        <div class="card-body">
+                            <div id="analysisResults"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Error Section -->
+                <div id="errorSection" class="mt-4" style="display: none;">
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Error</h5>
+                        <p id="errorMessage"></p>
+                        <div id="errorDebugInfo" class="debug-info" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <!-- Available Categories -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-list me-2"></i>
+                            Kategori Yang Tersedia
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6 class="fw-bold text-primary">Profesi Umum</h6>
+                                <div class="mb-3">
+                                    {% for category, label in categories %}
+                                        {% if 'Spesialis' not in category and 'Sertifikasi' not in category and 'Basic' not in category and 'Advanced' not in category and 'Pelatihan' not in category and 'Manajemen' not in category %}
+                                            <span class="category-badge">{{ category }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="fw-bold text-primary">Spesialisasi</h6>
+                                <div class="mb-3">
+                                    {% for category, label in categories %}
+                                        {% if 'Spesialis' in category %}
+                                            <span class="category-badge">{{ category }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="fw-bold text-primary">Sertifikasi & Pelatihan</h6>
+                                <div class="mb-3">
+                                    {% for category, label in categories %}
+                                        {% if 'Sertifikasi' in category or 'Basic' in category or 'Advanced' in category or 'Pelatihan' in category or 'Manajemen' in category %}
+                                            <span class="category-badge">{{ category }}</span>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-container">
+            <div class="spinner-border text-light mb-3" style="width: 3rem; height: 3rem;"></div>
+            <h5>Menganalisis sertifikat...</h5>
+            <p>AI sedang memproses gambar Anda</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('certificate_image');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            const submitBtn = document.getElementById('submitBtn');
+            const removeImageBtn = document.getElementById('removeImage');
+            const uploadForm = document.getElementById('uploadForm');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const resultsSection = document.getElementById('resultsSection');
+            const errorSection = document.getElementById('errorSection');
+            const debugBtn = document.getElementById('debugBtn');
+            const debugPanel = document.getElementById('debugPanel');
+            
+            // Debug functionality
+            debugBtn.addEventListener('click', testConnection);
+            
+            // Click to select file
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            // Drag and drop functionality
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    handleFileSelect(files[0]);
+                }
+            });
+            
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+            
+            // Remove image
+            removeImageBtn.addEventListener('click', () => {
+                fileInput.value = '';
+                imagePreview.style.display = 'none';
+                submitBtn.disabled = true;
+                hideResults();
+            });
+            
+            // Form submission
+            uploadForm.addEventListener('submit', handleSubmit);
+            
+            function testConnection() {
+                showDebug('Testing connection...');
+                fetch('/management/categories/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    showDebug(`Response status: ${response.status}`);
+                    return response.text().then(text => {
+                        try {
+                            const data = JSON.parse(text);
+                            showDebug('Connection test successful!', data);
+                        } catch (e) {
+                            showDebug('Response is not JSON:', text.substring(0, 500));
+                        }
+                    });
+                })
+                .catch(error => {
+                    showDebug('Connection test failed:', error.message);
+                });
+            }
+            
+            function showDebug(message, data = null) {
+                const debugContent = document.getElementById('debugContent');
+                const timestamp = new Date().toLocaleTimeString();
+                let content = `[${timestamp}] ${message}`;
+                if (data) {
+                    content += '\n' + JSON.stringify(data, null, 2);
+                }
+                debugContent.innerHTML = '<pre>' + content + '</pre>';
+                debugPanel.style.display = 'block';
+            }
+            
+            function handleFileSelect(file) {
+                // Validate file type
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    showError('Tipe file tidak didukung. Harap upload gambar JPEG, PNG, atau WebP.');
+                    return;
+                }
+                
+                // Validate file size (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    showError('Ukuran file terlalu besar. Maksimal 10MB.');
+                    return;
+                }
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    submitBtn.disabled = false;
+                    hideResults();
+                    showDebug(`File selected: ${file.name}, Size: ${file.size} bytes, Type: ${file.type}`);
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            function handleSubmit(e) {
+                e.preventDefault();
+                
+                if (!fileInput.files.length) {
+                    showError('Harap pilih gambar sertifikat terlebih dahulu.');
+                    return;
+                }
+                
+                const formData = new FormData();
+                formData.append('certificate_image', fileInput.files[0]);
+                
+                // Show loading
+                showLoading();
+                hideResults();
+                
+                // Debug info
+                showDebug('Submitting form...', {
+                    fileName: fileInput.files[0].name,
+                    fileSize: fileInput.files[0].size,
+                    fileType: fileInput.files[0].type
+                });
+                
+                fetch('/management/process/', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                .then(response => {
+                    showDebug(`Response received. Status: ${response.status}, Content-Type: ${response.headers.get('content-type')}`);
+                    
+                    // Check if response is JSON
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        return response.text().then(text => {
+                            throw new Error(`Expected JSON but got ${contentType}. Response: ${text.substring(0, 500)}`);
+                        });
+                    }
+                    
+                    return response.json();
+                })
+                .then(data => {
+                    hideLoading();
+                    showDebug('JSON response received', data);
+                    
+                    if (data.status === 'success') {
+                        showResults(data);
+                    } else {
+                        showError(data.error || 'Terjadi kesalahan saat memproses gambar.', data.debug_info);
+                    }
+                })
+                .catch(error => {
+                    hideLoading();
+                    showDebug('Error occurred', error.message);
+                    showError('Terjadi kesalahan: ' + error.message);
+                });
+            }
+            
+            function showResults(data) {
+                const resultsDiv = document.getElementById('analysisResults');
+                const categorization = data.categorization;
+                
+                let confidenceClass = 'confidence-' + categorization.confidence;
+                let confidenceText = '';
+                switch(categorization.confidence) {
+                    case 'high': confidenceText = 'Tinggi'; break;
+                    case 'medium': confidenceText = 'Sedang'; break;
+                    case 'low': confidenceText = 'Rendah'; break;
+                    default: confidenceText = 'Tidak Cocok'; break;
+                }
+                
+                let html = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Kategori Terdeteksi</h5>
+                            ${categorization.matched_category ? `
+                                <div class="alert alert-success">
+                                    <h6 class="fw-bold">${categorization.matched_category}</h6>
+                                    <small>Tingkat Kepercayaan: <span class="${confidenceClass} fw-bold">${confidenceText}</span></small>
+                                </div>
+                            ` : `
+                                <div class="alert alert-warning">
+                                    <h6>Kategori tidak teridentifikasi</h6>
+                                    <small>Teks terdeteksi: ${categorization.original_text}</small>
+                                </div>
+                            `}
+                            
+                            ${categorization.alternatives && categorization.alternatives.length > 0 ? `
+                                <h6 class="mt-3">Alternatif Kategori:</h6>
+                                <ul class="list-unstyled">
+                                    ${categorization.alternatives.map(alt => `<li class="category-badge">${alt}</li>`).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-primary mb-3">Respons AI</h5>
+                            <div class="bg-light p-3 rounded">
+                                <pre style="white-space: pre-wrap; font-size: 0.9em;">${data.ai_response}</pre>
+                            </div>
+                            
+                            ${data.debug_info ? `
+                                <div class="debug-info mt-3">
+                                    <strong>Debug Info:</strong><br>
+                                    ${JSON.stringify(data.debug_info, null, 2)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                resultsDiv.innerHTML = html;
+                resultsSection.style.display = 'block';
+                
+                // Scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            function showError(message, debugInfo = null) {
+                document.getElementById('errorMessage').textContent = message;
+                
+                if (debugInfo) {
+                    const debugDiv = document.getElementById('errorDebugInfo');
+                    debugDiv.innerHTML = '<strong>Debug Info:</strong><br><pre>' + JSON.stringify(debugInfo, null, 2) + '</pre>';
+                    debugDiv.style.display = 'block';
+                }
+                
+                errorSection.style.display = 'block';
+                setTimeout(() => {
+                    errorSection.style.display = 'none';
+                }, 10000);
+            }
+            
+            function hideResults() {
+                resultsSection.style.display = 'none';
+                errorSection.style.display = 'none';
+            }
+            
+            function showLoading() {
+                loadingOverlay.style.display = 'flex';
+            }
+            
+            function hideLoading() {
+                loadingOverlay.style.display = 'none';
+            }
+            
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        });
+    </script>
+</body>
+</html>

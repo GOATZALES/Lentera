@@ -7,5 +7,6 @@ urllib3
 python-dotenv 
 google-generativeai
 python-dateutil
+pillow
 langchain
 langchain-google-genai

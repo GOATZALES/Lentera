@@ -61,7 +61,7 @@ def nakes_profile_view(request):
 
 def cari_tugas_view(request):
     """View untuk halaman cari tugas dengan tampilan faskes dan jadwal"""
-    nakes = get_user_context(request)
+    nakes = get_current_nakes()
     if not nakes:
         messages.error(request, "Nakes profile not found.")
         return redirect('management:nakes_profile')
@@ -100,15 +100,15 @@ def cari_tugas_view(request):
         
         if departemen_with_shifts:
             # Tambahkan informasi tipe faskes jika tidak ada
-            if not faskes.tipe_faskes:
+            if not faskes.jenis_faskes:
                 if 'rumah sakit' in faskes.nama_faskes.lower() or 'rs' in faskes.nama_faskes.lower():
-                    faskes.tipe_faskes = 'Rumah Sakit'
+                    faskes.jenis_faskes = 'Rumah Sakit'
                 elif 'puskesmas' in faskes.nama_faskes.lower():
-                    faskes.tipe_faskes = 'Puskesmas'
+                    faskes.jenis_faskes = 'Puskesmas'
                 elif 'klinik' in faskes.nama_faskes.lower():
-                    faskes.tipe_faskes = 'Klinik'
+                    faskes.jenis_faskes = 'Klinik'
                 else:
-                    faskes.tipe_faskes = 'Faskes'
+                    faskes.jenis_faskes = 'Faskes'
             
             faskes_data.append({
                 'faskes': faskes,
@@ -434,8 +434,8 @@ def nakes_histori_kinerja_view(request):
 # Tambahkan ini ke management/views.py
 
 def nakes_evaluasi_view(request):
-    """View untuk halaman evaluasi kinerja nakes"""
-    nakes = get_user_context(request)
+    """View untuk halaman evaluasi kinerja nakes dengan tren chart dan rangkuman AI"""
+    nakes = get_current_nakes()
     if not nakes:
         messages.error(request, "Nakes profile not found.")
         return redirect('management:nakes_profile')
@@ -451,7 +451,7 @@ def nakes_evaluasi_view(request):
         'review_faskes'
     ).order_by('-waktu_clock_out')
 
-    # Hitung statistik evaluasi
+    # Hitung statistik dasar
     total_shifts = completed_assignments.count()
     total_hours = sum([assignment.shift.durasi_menit for assignment in completed_assignments]) / 60
     total_earnings = sum([float(assignment.total_bayaran_nakes or 0) for assignment in completed_assignments])
@@ -462,40 +462,10 @@ def nakes_evaluasi_view(request):
     
     if total_reviews > 0:
         avg_rating = sum([review.rating_kinerja for review in reviews]) / total_reviews
-        rating_distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-        for review in reviews:
-            rating_distribution[review.rating_kinerja] += 1
-        
-        # Convert to percentages
-        for rating in rating_distribution:
-            rating_distribution[rating] = (rating_distribution[rating] / total_reviews) * 100
     else:
         avg_rating = 0
-        rating_distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
 
-    # Performance by faskes
-    faskes_performance = {}
-    for assignment in completed_assignments:
-        if hasattr(assignment, 'review_faskes'):
-            faskes_name = assignment.shift.departemen.faskes.nama_faskes
-            if faskes_name not in faskes_performance:
-                faskes_performance[faskes_name] = {
-                    'total_shifts': 0,
-                    'total_rating': 0,
-                    'avg_rating': 0,
-                    'earnings': 0
-                }
-            
-            faskes_performance[faskes_name]['total_shifts'] += 1
-            faskes_performance[faskes_name]['total_rating'] += assignment.review_faskes.rating_kinerja
-            faskes_performance[faskes_name]['earnings'] += float(assignment.total_bayaran_nakes or 0)
-    
-    # Calculate averages
-    for faskes in faskes_performance:
-        if faskes_performance[faskes]['total_shifts'] > 0:
-            faskes_performance[faskes]['avg_rating'] = faskes_performance[faskes]['total_rating'] / faskes_performance[faskes]['total_shifts']
-
-    # Monthly performance data for charts
+    # Monthly performance data untuk line chart
     from collections import defaultdict
     from datetime import datetime
     
@@ -510,7 +480,7 @@ def nakes_evaluasi_view(request):
             monthly_data[month_key]['total_rating'] += assignment.review_faskes.rating_kinerja
             monthly_data[month_key]['review_count'] += 1
     
-    # Calculate monthly averages and convert to list
+    # Convert to list dan sort berdasarkan bulan
     monthly_performance = []
     for month_key in sorted(monthly_data.keys()):
         data = monthly_data[month_key]
@@ -524,20 +494,30 @@ def nakes_evaluasi_view(request):
             'month_key': month_key,
             'shifts': data['shifts'],
             'earnings': data['earnings'],
-            'avg_rating': round(avg_rating, 1)
+            'avg_rating': round(avg_rating, 2)
         })
 
-    # Skills assessment based on reviews
-    skills_feedback = []
+    # Kumpulkan semua komentar untuk dirangkum dengan AI
+    all_comments = []
     for assignment in completed_assignments:
         if hasattr(assignment, 'review_faskes') and assignment.review_faskes.komentar:
-            skills_feedback.append({
+            all_comments.append({
                 'faskes': assignment.shift.departemen.faskes.nama_faskes,
                 'departemen': assignment.shift.departemen.nama_departemen,
                 'tanggal': assignment.shift.tanggal_shift,
                 'rating': assignment.review_faskes.rating_kinerja,
                 'komentar': assignment.review_faskes.komentar
             })
+
+    # Generate AI summary dari komentar
+    ai_summary = None
+    if all_comments:
+        try:
+            from .management_ai_services import get_gemini_summary  # Import function untuk AI summary
+            ai_summary = get_gemini_summary(all_comments, nakes.nama_lengkap)
+        except Exception as e:
+            logger.error(f"Error generating AI summary: {e}")
+            ai_summary = None
 
     # Recent performance trend (last 6 months)
     from datetime import timedelta
@@ -564,12 +544,11 @@ def nakes_evaluasi_view(request):
         'total_earnings': total_earnings,
         'avg_rating': round(avg_rating, 1),
         'total_reviews': total_reviews,
-        'rating_distribution': rating_distribution,
-        'faskes_performance': faskes_performance,
-        'monthly_performance': monthly_performance[-6:],  # Last 6 months
-        'skills_feedback': skills_feedback[-5:],  # Last 5 feedback
+        'monthly_performance': monthly_performance[-12:],  # Last 12 months untuk chart
         'recent_performance': recent_performance,
+        'ai_summary': ai_summary,
         'has_data': total_shifts > 0,
+        'total_comments': len(all_comments),
     }
     
     return render(request, 'evaluasi.html', context)
