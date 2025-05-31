@@ -4,7 +4,7 @@
 
 Lentera adalah platform revolusioner yang dirancang untuk menjembatani kesenjangan antara fasilitas kesehatan (faskes) dan tenaga kesehatan (nakes) di Indonesia. Kami memanfaatkan kekuatan AI untuk optimalisasi SDM, efisiensi biaya, dan kesiapsiagaan bencana, memastikan layanan kesehatan yang lebih baik dan merata bagi seluruh masyarakat.
 
-[![Status Hackathon](https://img.shields.io/badge/Hackathon-Submission%20Ready-brightgreen)](https://hackathon.example.com)
+[![Status Hackathon](https://img.shields.io/badge/Hackathon-Submission%20Ready-brightgreen)](https://lentera-production.up.railway.app)
 
 ---
 
@@ -265,7 +265,7 @@ Pendekatan menggunakan Langchain ReAct Agent memungkinkan AI untuk melakukan *re
 ```
 
 
-## 🔮 Rencana Pengembangan
+## 🔮 Rencana Pengembangan Kedepan
 
 *   Integrasi penuh dengan SATUSEHAT Kemenkes.
 *   Implementasi Payment Gateway (Midtrans/Xendit).
@@ -282,8 +282,8 @@ Pendekatan menggunakan Langchain ReAct Agent memungkinkan AI untuk melakukan *re
 
 *   **[Cahya Bagus Gautama Gozales]** - Developer
 *   **[Muhammad Albyarto Ghazali]** - Developer
-*   **[Muhammad Raihan Maulana]** - Developer
-*   **[Regina Meilani Aruan]** - Developer
+*   **[Muhammad Raihan Maulana]** - Developer & Designer
+*   **[Regina Meilani Aruan]** - Business & PM
 ---
 
 Terima kasih telah mencoba Lentera HealthConnect! Kami percaya platform ini dapat memberikan kontribusi positif bagi ekosistem kesehatan di Indonesia.
