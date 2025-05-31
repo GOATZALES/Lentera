@@ -1,146 +1,517 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola Shift</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
-        }
-        /* Custom styles for better visual appeal */
-        .card {
-            background-color: #ffffff;
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
-        }
-        .filter-button {
-            @apply px-4 py-2 rounded-md transition-colors duration-200;
-        }
-        .filter-button.active {
-            @apply bg-blue-600 text-white shadow-md;
-        }
-        .filter-button:not(.active) {
-            @apply bg-gray-200 text-gray-700 hover:bg-gray-300;
-        }
-        .table-header {
-            @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
-        }
-        .table-cell {
-            @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
-        }
-        .table-action-button {
-            @apply px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200;
-        }
-    </style>
-</head>
-<body class="p-4 sm:p-6 lg:p-8">
-    <div class="max-w-7xl mx-auto">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Kelola Shift</h1>
-            <p class="text-lg text-gray-600">Departemen: <span class="font-semibold">{{ departemen.nama_departemen|default:'Nama Departemen' }}</span></p>
-        </header>
+{% extends 'templates/management_base_faskes.html' %}
 
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="card p-6 text-center">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Total Shift</h2>
-                <p class="text-4xl font-bold text-blue-600">{{ shift_summary.total|default:'0' }}</p>
-            </div>
-            <div class="card p-6 text-center">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Shift Aktif</h2>
-                <p class="text-4xl font-bold text-green-600">{{ shift_summary.active|default:'0' }}</p>
-            </div>
-            <div class="card p-6 text-center">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Shift Selesai</h2>
-                <p class="text-4xl font-bold text-purple-600">{{ shift_summary.completed|default:'0' }}</p>
-            </div>
-            <div class="card p-6 text-center">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Shift Belum Terisi</h2>
-                <p class="text-4xl font-bold text-red-600">{{ shift_summary.unfilled|default:'0' }}</p>
-            </div>
-        </section>
+{% load static %}
 
-        <section class="card p-6 mb-8 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4">
-            <div class="flex flex-wrap gap-2">
-                <a href="?date=today&status={{ current_filters.status }}" class="filter-button {% if current_filters.date == 'today' %}active{% endif %}">Hari Ini</a>
-                <a href="?date=upcoming&status={{ current_filters.status }}" class="filter-button {% if current_filters.date == 'upcoming' %}active{% endif %}">Mendatang</a>
-                <a href="?date=past&status={{ current_filters.status }}" class="filter-button {% if current_filters.date == 'past' %}active{% endif %}">Lalu</a>
+
+{% block title %}Manajemen - {{ departemen.nama_departemen }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cari_tugas.css' %}"/>
+{% endblock %}
+
+
+
+{% block content %}
+        <!-- Main Content -->
+        <div class="content-wrapper">
+            
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <div id="schedule-content">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="empty-title">Pilih Faskes dan Departemen</div>
+                        <div class="empty-subtitle">
+                            Klik pada salah satu faskes di sebelah kiri untuk melihat jadwal shift yang tersedia.
+                            Anda dapat langsung menerima tugas yang sesuai dengan kualifikasi Anda.
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <div class="flex flex-wrap gap-2">
-                <a href="?date={{ current_filters.date }}&status=all" class="filter-button {% if current_filters.status == 'all' %}active{% endif %}">Semua Status</a>
-                <a href="?date={{ current_filters.date }}&status=active" class="filter-button {% if current_filters.status == 'active' %}active{% endif %}">Aktif</a>
-                <a href="?date={{ current_filters.date }}&status=inactive" class="filter-button {% if current_filters.status == 'inactive' %}active{% endif %}">Tidak Aktif</a>
-            </div>
-
-            <form method="POST" action="" class="w-full sm:w-auto">
-                <button type="submit" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
-                    Buat Shift Baru
-                </button>
-            </form>
-        </section>
-
-        <section class="card p-6 overflow-x-auto">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Daftar Shift</h2>
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="table-header">ID Shift</th>
-                        <th scope="col" class="table-header">Tanggal</th>
-                        <th scope="col" class="table-header">Waktu Mulai</th>
-                        <th scope="col" class="table-header">Waktu Selesai</th>
-                        <th scope="col" class="table-header">Staf Dibutuhkan</th>
-                        <th scope="col" class="table-header">Staf Terisi</th>
-                        <th scope="col" class="table-header">Status</th>
-                        <th scope="col" class="relative table-header">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% if shifts %}
-                        {% for shift in shifts %}
-                        <tr>
-                            <td class="table-cell font-medium text-blue-600">{{ shift.id|default:'N/A' }}</td>
-                            <td class="table-cell">{{ shift.tanggal_shift|date:"d M Y"|default:'N/A' }}</td>
-                            <td class="table-cell">{{ shift.jam_mulai|time:"H:i"|default:'N/A' }}</td>
-                            <td class="table-cell">{{ shift.jam_selesai|time:"H:i"|default:'N/A' }}</td>
-                            <td class="table-cell">{{ shift.jumlah_staf_dibutuhkan|default:'0' }}</td>
-                            <td class="table-cell">
-                                <span class="font-semibold">{{ shift.filled_count|default:'0' }}</span> / <span>{{ shift.assignment_count|default:'0' }}</span>
-                            </td>
-                            <td class="table-cell">
-                                {% if shift.is_active %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Aktif
-                                    </span>
-                                {% else %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        Tidak Aktif
-                                    </span>
-                                {% endif %}
-                                {% if shift.is_completed_by_faskes %}
-                                    <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                                        Selesai
-                                    </span>
-                                {% else %}
-                                    <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Menunggu
-                                    </span>
-                                {% endif %}
-                            </td>
-                            
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="8" class="table-cell text-center text-gray-500 py-8">Tidak ada shift yang ditemukan.</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </section>
+        </div>
     </div>
-</body>
-</html>
+
+    <!-- Shift Detail Modal -->
+    <div id="shiftModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Detail Shift
+                </div>
+                <div class="modal-subtitle" id="modalDepartemenInfo"></div>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="modalClose">
+                    <i class="fas fa-times"></i>
+                    Tutup
+                </button>
+                <button class="btn btn-primary" id="modalAccept">
+                    <i class="fas fa-check"></i>
+                    Terima Tugas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentDepartemen = null;
+        let currentShifts = [];
+        let selectedShift = null;
+
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFaskesSelection();
+            initializeModal();
+        });
+
+        function initializeFaskesSelection() {
+            const faskesCards = document.querySelectorAll('.faskes-card');
+            
+            faskesCards.forEach(card => {
+                const departemenItems = card.querySelectorAll('.departemen-item');
+                
+                departemenItems.forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        
+                        // Remove previous selections
+                        faskesCards.forEach(c => c.classList.remove('selected'));
+                        
+                        // Add selection to parent card
+                        card.classList.add('selected');
+                        
+                        // Get departemen ID and load schedule
+                        const departemenId = this.getAttribute('data-departemen-id');
+                        loadDepartemenSchedule(departemenId);
+                    });
+                });
+            });
+        }
+
+        function loadDepartemenSchedule(departemenId) {
+            const scheduleContent = document.getElementById('schedule-content');
+            scheduleContent.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Memuat jadwal shift...</div>
+                </div>
+            `;
+            
+            fetch(`/management/api/departemen/${departemenId}/schedule/`)
+                .then(response => response.json())
+                .then(data => {
+                    currentDepartemen = data.departemen;
+                    currentShifts = data.shifts;
+                    renderSchedule(data);
+                })
+                .catch(error => {
+                    console.error('Error loading schedule:', error);
+                    scheduleContent.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon" style="color: #ef4444;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="empty-title">Error Memuat Jadwal</div>
+                            <div class="empty-subtitle">
+                                Terjadi kesalahan saat memuat jadwal. Silakan coba lagi atau hubungi administrator.
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderSchedule(data) {
+            const scheduleContent = document.getElementById('schedule-content');
+            
+            if (data.shifts.length === 0) {
+                scheduleContent.innerHTML = `
+                    <div class="no-shifts">
+                        <div class="no-shifts-icon">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <div class="no-shifts-title">Tidak Ada Shift Tersedia</div>
+                        <div class="no-shifts-subtitle">
+                            Tidak ada shift yang tersedia di ${data.departemen.nama} untuk 2 minggu ke depan.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Calculate stats
+            const totalShifts = data.shifts.length;
+            const totalEarnings = data.shifts.reduce((sum, shift) => sum + shift.estimated_worth, 0);
+
+            // Create schedule header
+            const headerHtml = `
+                <div class="schedule-header">
+                    <div class="schedule-info">
+                        <div class="schedule-title">${data.departemen.nama}</div>
+                        <div class="schedule-subtitle">
+                            <i class="fas fa-building"></i>
+                            ${data.departemen.faskes} - Jadwal 2 Minggu ke Depan
+                        </div>
+                    </div>
+                    <div class="schedule-stats">
+                        <div class="stat-card">
+                            <div class="stat-number">${totalShifts}</div>
+                            <div class="stat-label">Shift Tersedia</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">Rp ${(totalEarnings / 1000).toFixed(0)}K</div>
+                            <div class="stat-label">Total Potensi</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Create calendar view
+            const calendarHtml = generateCalendarView(data.shifts, data.date_range);
+            
+            scheduleContent.innerHTML = headerHtml + calendarHtml;
+            
+            // Add event listeners to shift blocks
+            addShiftEventListeners();
+        }
+
+        function generateCalendarView(shifts, dateRange) {
+            const startDate = new Date(dateRange.start);
+            
+            // Group shifts by date
+            const shiftsByDate = {};
+            shifts.forEach(shift => {
+                const date = shift.tanggal;
+                if (!shiftsByDate[date]) {
+                    shiftsByDate[date] = [];
+                }
+                shiftsByDate[date].push(shift);
+            });
+
+            // Get current week dates
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                weekDates.push(date);
+            }
+
+            // Generate calendar HTML
+            let calendarHtml = `
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <i class="fas fa-calendar-week"></i>
+                        Jadwal Mingguan - ${formatDateRange(weekDates[0], weekDates[6])}
+                    </div>
+                    <div class="week-view">
+                        <div class="time-header">Jam</div>
+            `;
+            
+            // Day headers
+            const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+            weekDates.forEach((date, index) => {
+                const dayName = dayNames[index];
+                const dateStr = `${date.getDate()}/${date.getMonth() + 1}`;
+                calendarHtml += `<div class="day-header">${dayName}<br><small>${dateStr}</small></div>`;
+            });
+
+            // Generate time slots and days
+            for (let hour = 6; hour <= 22; hour += 2) {
+                calendarHtml += `<div class="time-slot">${hour.toString().padStart(2, '0')}:00</div>`;
+                
+                weekDates.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    let cellContent = '';
+                    
+                    if (shiftsByDate[dateStr]) {
+                        shiftsByDate[dateStr].forEach(shift => {
+                            const shiftHour = parseInt(shift.jam_mulai.split(':')[0]);
+                            // Show shift if it starts within this 2-hour block
+                            if (shiftHour >= hour && shiftHour < hour + 2) {
+                                cellContent += `
+                                    <div class="shift-block" data-shift-id="${shift.shift_id}">
+                                        <div class="shift-time">${shift.jam_mulai}-${shift.jam_selesai}</div>
+                                        <div class="shift-info">${shift.durasi_menit}min • Rp ${(shift.estimated_worth / 1000).toFixed(0)}K</div>
+                                    </div>
+                                `;
+                            }
+                        });
+                    }
+                    
+                    calendarHtml += `<div class="day-cell" data-date="${dateStr}" data-hour="${hour}">${cellContent}</div>`;
+                });
+            }
+            
+            calendarHtml += '</div></div>';
+            return calendarHtml;
+        }
+
+        function addShiftEventListeners() {
+            const shiftBlocks = document.querySelectorAll('.shift-block');
+            shiftBlocks.forEach(block => {
+                block.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const shiftId = this.getAttribute('data-shift-id');
+                    showShiftModal(shiftId);
+                });
+            });
+        }
+
+        function showShiftModal(shiftId) {
+            const shift = currentShifts.find(s => s.shift_id === shiftId);
+            if (!shift) return;
+
+            selectedShift = shift;
+            
+            // Populate modal content
+            document.getElementById('modalDepartemenInfo').innerHTML = `
+                <i class="fas fa-hospital"></i>
+                ${currentDepartemen.nama} - ${currentDepartemen.faskes}
+            `;
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="info-grid">
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-calendar"></i>
+                            Tanggal
+                        </span>
+                        <span class="info-value">${formatDate(shift.tanggal)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-clock"></i>
+                            Waktu
+                        </span>
+                        <span class="info-value">${shift.jam_mulai} - ${shift.jam_selesai}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-hourglass-half"></i>
+                            Durasi
+                        </span>
+                        <span class="info-value">${shift.durasi_menit} menit</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-money-bill-wave"></i>
+                            Estimasi Bayaran
+                        </span>
+                        <span class="info-value highlight">Rp ${shift.estimated_worth.toLocaleString('id-ID')}</span>
+                    </div>
+                    ${shift.deskripsi_tugas ? `
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-tasks"></i>
+                            Deskripsi Tugas
+                        </span>
+                        <span class="info-value">${shift.deskripsi_tugas}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Show modal
+            document.getElementById('shiftModal').style.display = 'block';
+        }
+
+        function initializeModal() {
+            const modal = document.getElementById('shiftModal');
+            const closeBtn = document.getElementById('modalClose');
+            const acceptBtn = document.getElementById('modalAccept');
+            
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            acceptBtn.addEventListener('click', function() {
+                if (selectedShift) {
+                    acceptShift(selectedShift.shift_id);
+                }
+            });
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.style.display === 'block') {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        function acceptShift(shiftId) {
+            const acceptBtn = document.getElementById('modalAccept');
+            const originalText = acceptBtn.innerHTML;
+            
+            acceptBtn.disabled = true;
+            acceptBtn.innerHTML = `
+                <div class="loading-spinner" style="width: 16px; height: 16px; margin-right: 8px;"></div>
+                Memproses...
+            `;
+            
+            fetch(`/management/api/shift/${shiftId}/accept/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Success animation
+                    acceptBtn.innerHTML = `
+                        <i class="fas fa-check"></i>
+                        Berhasil!
+                    `;
+                    acceptBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    
+                    setTimeout(() => {
+                        document.getElementById('shiftModal').style.display = 'none';
+                        
+                        // Show success notification
+                        showNotification(data.message, 'success');
+                        
+                        // Remove shift block with animation
+                        const shiftBlock = document.querySelector(`[data-shift-id="${shiftId}"]`);
+                        if (shiftBlock) {
+                            shiftBlock.classList.add('shift-removed');
+                            setTimeout(() => {
+                                // Reload schedule to update available shifts
+                                if (currentDepartemen) {
+                                    const activeDepartemenElement = document.querySelector('.faskes-card.selected .departemen-item');
+                                    if (activeDepartemenElement) {
+                                        const departemenId = activeDepartemenElement.getAttribute('data-departemen-id');
+                                        loadDepartemenSchedule(departemenId);
+                                    }
+                                }
+                            }, 500);
+                        }
+                    }, 1500);
+                } else {
+                    showNotification(data.error || 'Terjadi kesalahan', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error accepting shift:', error);
+                showNotification('Terjadi kesalahan saat menerima shift', 'error');
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    acceptBtn.disabled = false;
+                    acceptBtn.innerHTML = originalText;
+                    acceptBtn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 16px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 400px;
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                notification.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${message}`;
+            } else {
+                notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                notification.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>${message}`;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 5000);
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        function formatDateRange(startDate, endDate) {
+            const options = { day: 'numeric', month: 'short' };
+            const start = startDate.toLocaleDateString('id-ID', options);
+            const end = endDate.toLocaleDateString('id-ID', options);
+            return `${start} - ${end}`;
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Press 'C' to focus on search or navigation
+            if (e.key === 'c' || e.key === 'C') {
+                const firstFaskes = document.querySelector('.faskes-card');
+                if (firstFaskes) {
+                    firstFaskes.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+
+        // Add smooth scrolling for better UX
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+{% endblock %}

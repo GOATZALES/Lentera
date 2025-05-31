@@ -42,7 +42,7 @@
                         
                         <div class="departemen-list">
                             {% for dept in item.departemen_list %}
-                            <div class="departemen-item" data-departemen-id="{{ dept.departemen.departemen_id }}">
+                            <div class="departemen-item" data-departemen-id="{{ dept.departemen.user_id }}">
                                 <span class="departemen-name">
                                     <i class="fas fa-door-open"></i>
                                     {{ dept.departemen.nama_departemen }}
@@ -143,7 +143,8 @@
                         card.classList.add('selected');
                         
                         // Get departemen ID and load schedule
-                        const departemenId = this.getAttribute('data-departemen-id');
+                        const departemenId = this.getAttribute('user_id');
+                        console.log(departemenId + "|  aaaaaaaaaaaaaaaaaaa")
                         loadDepartemenSchedule(departemenId);
                     });
                 });
@@ -159,7 +160,7 @@
                 </div>
             `;
             
-            fetch(`/management/api/departemen/${departemenId}/schedule/`)
+            fetch(`/management/api/departemen${departemenId}/schedule/`)
                 .then(response => response.json())
                 .then(data => {
                     currentDepartemen = data.departemen;

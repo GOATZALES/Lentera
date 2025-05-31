@@ -14,6 +14,7 @@ import json
 
 from authentication.models import Departemen, Faskes
 from .models import Nakes, Shift, ShiftAssignment, ReviewNakes, NakesSkill
+from .dummy import create_dummy_data
 
 def get_current_department():
     """
@@ -61,7 +62,7 @@ def departemen_dashboard(request):
     Dashboard utama Departemen dengan overview operasional
     """
     try:
-        departemen = request.user.departemen
+        departemen = get_current_department()
     except Departemen.DoesNotExist:
         messages.error(request, 'Akses ditolak. Anda bukan Departemen yang terdaftar.')
         return redirect('authentication:login')
@@ -120,7 +121,7 @@ def departemen_dashboard(request):
         'page_title': 'Dashboard Departemen'
     }
     
-    return render(request, 'management/departemen_dashboard.html', context)
+    return render(request, 'departemen_dashboard.html', context)
 
 def kelola_lamaran(request):
     
@@ -189,7 +190,7 @@ def process_assignment(request, assignment_id):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
     try:
-        departemen = request.user.departemen
+        departemen = get_current_department()
     except Departemen.DoesNotExist:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
@@ -303,7 +304,7 @@ def laporan_departemen(request):
     Laporan dan analytics untuk departemen
     """
     try:
-        departemen = request.user.departemen
+        departemen = get_current_department()
     except Departemen.DoesNotExist:
         messages.error(request, 'Akses ditolak. Anda bukan Departemen yang terdaftar.')
         return redirect('management:login')

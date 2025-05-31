@@ -1,0 +1,1369 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrasi Tenaga Kesehatan</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            padding: 20px 0;
+            min-height: 100vh;
+        }
+
+        .registration-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .step-tabs {
+            background: #f8f9fa;
+            padding: 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .step-tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            border: none;
+            border-right: 1px solid #dee2e6;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #6c757d;
+            position: relative;
+        }
+
+        .step-tab:last-child {
+            border-right: none;
+        }
+
+        .step-tab.active {
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            color: white;
+        }
+
+        .step-tab.completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .step-tab i {
+            display: block;
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .step-number {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .step-tab:not(.active):not(.completed) .step-number {
+            background: #dee2e6;
+            color: #6c757d;
+        }
+
+        .form-content {
+            padding: 40px;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header {
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        .section-header h4 {
+            color: #495057;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .section-header p {
+            color: #6c757d;
+            margin: 5px 0 0 0;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-label i {
+            margin-right: 8px;
+            color: #4fc3f7;
+            width: 16px;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #4fc3f7;
+            box-shadow: 0 0 0 0.2rem rgba(79, 195, 247, 0.25);
+            background: white;
+        }
+
+        .certificate-upload-area {
+            border: 3px dashed #4fc3f7;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+            margin: 20px 0;
+        }
+
+        .certificate-upload-area:hover {
+            border-color: #29b6f6;
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+
+        .certificate-upload-area.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .certificate-upload-area.analyzing {
+            border-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #4fc3f7;
+            margin-bottom: 20px;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .analysis-result {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border: 1px solid #28a745;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .data-summary {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .data-summary h6 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .data-item:last-child {
+            border-bottom: none;
+        }
+
+        .data-item strong {
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .category-preview {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border: 1px solid #4fc3f7;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .navigation-buttons {
+            background: #f8f9fa;
+            padding: 20px 40px;
+            border-top: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-custom {
+            border-radius: 25px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            border: none;
+            color: white;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 195, 247, 0.4);
+        }
+
+        .btn-success-custom {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border: none;
+            color: white;
+        }
+
+        .btn-success-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-outline-secondary {
+            border: 2px solid #6c757d;
+            color: #6c757d;
+            background: transparent;
+        }
+
+        .btn-outline-secondary:hover {
+            background: #6c757d;
+            color: white;
+        }
+
+        .confidence-high { color: #28a745; font-weight: bold; }
+        .confidence-medium { color: #ffc107; font-weight: bold; }
+        .confidence-low { color: #dc3545; font-weight: bold; }
+
+        .btn-success-custom:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-success-custom:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner-container {
+            text-align: center;
+            color: white;
+        }
+
+        .alert-custom {
+            border-radius: 15px;
+            border: none;
+            margin-bottom: 30px;
+        }
+
+        .alert-info-custom {
+            background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .form-content {
+                padding: 20px;
+            }
+            
+            .navigation-buttons {
+                padding: 15px 20px;
+            }
+            
+            .step-tab {
+                padding: 15px 10px;
+            }
+            
+            .step-tab span {
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% csrf_token %}
+    
+    <div class="main-container">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-10 col-xl-9">
+                    <div class="registration-card">
+                        <!-- Step Tabs -->
+                        <div class="step-tabs d-flex">
+                            <div class="step-tab active" id="tab1">
+                                <div class="step-number">1</div>
+                                <i class="fas fa-user"></i>
+                                <span>Data Akun</span>
+                            </div>
+                            <div class="step-tab" id="tab2">
+                                <div class="step-number">2</div>
+                                <i class="fas fa-stethoscope"></i>
+                                <span>Data Profesi</span>
+                            </div>
+                            <div class="step-tab" id="tab3">
+                                <div class="step-number">3</div>
+                                <i class="fas fa-certificate"></i>
+                                <span>Upload Sertifikat</span>
+                            </div>
+                            <div class="step-tab" id="tab4">
+                                <div class="step-number">4</div>
+                                <i class="fas fa-check-circle"></i>
+                                <span>Verifikasi</span>
+                            </div>
+                        </div>
+
+                        <div class="form-content">
+                            <!-- Info Alert -->
+                            <div class="alert alert-info-custom alert-custom">
+                                <h6><i class="fas fa-robot me-2"></i>Teknologi AI Terbaru</h6>
+                                <p class="mb-0">Isi data diri terlebih dahulu, kemudian upload sertifikat medis untuk analisis AI yang akan menentukan kategori kualifikasi secara otomatis.</p>
+                            </div>
+
+                            <!-- Messages -->
+                            {% if messages %}
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show alert-custom" role="alert">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+
+                            <form method="post" enctype="multipart/form-data" id="registrationForm">
+                                {% csrf_token %}
+                                
+                                <!-- Step 1: User Account -->
+                                <div class="form-section active" id="section1">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-user me-3"></i>Informasi Akun</h4>
+                                        <p>Buat akun untuk mengakses sistem manajemen tenaga kesehatan</p>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ user_form.username.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-user-tag"></i>Username
+                                                </label>
+                                                {{ user_form.username }}
+                                                {% if user_form.username.help_text %}
+                                                    <div class="form-text">{{ user_form.username.help_text }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ user_form.email.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-envelope"></i>Email
+                                                </label>
+                                                {{ user_form.email }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ user_form.first_name.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-user"></i>Nama Depan
+                                                </label>
+                                                {{ user_form.first_name }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ user_form.last_name.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-user"></i>Nama Belakang
+                                                </label>
+                                                {{ user_form.last_name }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ user_form.password1.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-lock"></i>Password
+                                                </label>
+                                                {{ user_form.password1 }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ user_form.password2.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-lock"></i>Konfirmasi Password
+                                                </label>
+                                                {{ user_form.password2 }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 2: Professional Information -->
+                                <div class="form-section" id="section2">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-stethoscope me-3"></i>Informasi Profesional</h4>
+                                        <p>Data profesi dan kualifikasi medis Anda</p>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="form-group">
+                                                <label for="{{ nakes_form.nama_lengkap.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-id-card"></i>Nama Lengkap
+                                                </label>
+                                                {{ nakes_form.nama_lengkap }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ nakes_form.jenis_kelamin.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-venus-mars"></i>Jenis Kelamin
+                                                </label>
+                                                {{ nakes_form.jenis_kelamin }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ nakes_form.tanggal_lahir.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-calendar"></i>Tanggal Lahir
+                                                </label>
+                                                {{ nakes_form.tanggal_lahir }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ nakes_form.profesi.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-user-md"></i>Profesi
+                                                </label>
+                                                {{ nakes_form.profesi }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ nakes_form.status.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-toggle-on"></i>Status
+                                                </label>
+                                                {{ nakes_form.status }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ nakes_form.nomor_registrasi.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-id-badge"></i>Nomor Registrasi
+                                                </label>
+                                                {{ nakes_form.nomor_registrasi }}
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ nakes_form.tahun_pengalaman.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-clock"></i>Tahun Pengalaman
+                                                </label>
+                                                {{ nakes_form.tahun_pengalaman }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="{{ nakes_form.nomor_telepon.id_for_label }}" class="form-label">
+                                                    <i class="fas fa-phone"></i>Nomor Telepon
+                                                </label>
+                                                {{ nakes_form.nomor_telepon }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="{{ nakes_form.alamat.id_for_label }}" class="form-label">
+                                            <i class="fas fa-map-marker-alt"></i>Alamat
+                                        </label>
+                                        {{ nakes_form.alamat }}
+                                    </div>
+                                </div>
+
+                                <!-- Step 3: Certificate Upload (Simplified for now) -->
+                                <div class="form-section" id="section3">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-certificate me-3"></i>Upload Sertifikat Medis</h4>
+                                        <p>Upload sertifikat medis Anda (AI analysis sementara dinonaktifkan)</p>
+                                    </div>
+                                    
+                                    <!-- Data Summary -->
+                                    <div class="data-summary" id="dataSummary">
+                                        <h6><i class="fas fa-user-check me-2"></i>Ringkasan Data Anda</h6>
+                                        <div id="summaryContent">
+                                            <!-- Will be filled by JavaScript -->
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="certificate-upload-area" id="uploadArea">
+                                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                        <h5>Drag & Drop sertifikat medis di sini</h5>
+                                        <p class="text-muted mb-3">atau klik untuk memilih file</p>
+                                        {{ nakes_form.certificate_image }}
+                                        <small class="text-muted d-block">
+                                            Format: JPEG, PNG, WebP (Max 10MB)
+                                        </small>
+                                    </div>
+                                    
+                                    <!-- Image Preview -->
+                                    <div id="imagePreview" class="mt-3 text-center" style="display: none;">
+                                        <div class="preview-container">
+                                            <img id="previewImg" class="preview-image" alt="Preview Sertifikat">
+                                        </div>
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-outline-danger btn-custom" id="removeImage">
+                                                <i class="fas fa-times"></i> Hapus Gambar
+                                            </button>
+                                            <!-- AI analysis button hidden for now -->
+                                            <div class="alert alert-info mt-2">
+                                                <small><i class="fas fa-info-circle me-1"></i> 
+                                                AI analysis sementara dinonaktifkan. Kategori akan diset sebagai "Dokter Umum" secara default.</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Analysis Result (hidden for now) -->
+                                    <div id="analysisResult" style="display: none;"></div>
+                                </div>
+
+                                <!-- Step 4: Final Verification -->
+                                <div class="form-section" id="section4">
+                                    <div class="section-header">
+                                        <h4><i class="fas fa-check-circle me-3"></i>Verifikasi Final</h4>
+                                        <p>Periksa kembali data Anda sebelum menyelesaikan registrasi</p>
+                                    </div>
+                                    
+                                    <!-- Complete Data Summary -->
+                                    <div class="data-summary">
+                                        <h6><i class="fas fa-clipboard-check me-2"></i>Data Lengkap Anda</h6>
+                                        <div id="finalSummaryContent">
+                                            <!-- Will be filled by JavaScript -->
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- AI Category Result -->
+                                    <div id="categoryPreview" class="category-preview" style="display: none;">
+                                        <h6><i class="fas fa-robot me-2"></i>Kategori Kualifikasi (Ditentukan AI)</h6>
+                                        <div id="categoryContent"></div>
+                                    </div>
+                                    
+                                    <!-- Terms and Conditions -->
+                                    <div class="mt-4">
+                                        <div class="form-check">
+                                            {{ nakes_form.agree_terms }}
+                                            <label class="form-check-label" for="{{ nakes_form.agree_terms.id_for_label }}">
+                                                {{ nakes_form.agree_terms.label }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="navigation-buttons">
+                            <button type="button" class="btn btn-outline-secondary btn-custom" id="prevBtn" style="display: none;">
+                                <i class="fas fa-arrow-left me-2"></i>Sebelumnya
+                            </button>
+                            <div class="flex-grow-1"></div>
+                            
+                            <!-- Debug button -->
+                            <button type="button" class="btn btn-warning btn-custom me-2" onclick="debugStep()">
+                                Debug Step
+                            </button>
+                            
+                            <button type="button" class="btn btn-primary-custom btn-custom" id="nextBtn">
+                                Selanjutnya<i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                            <button type="submit" class="btn btn-success-custom btn-custom" id="submitBtn" style="display: none;" form="registrationForm">
+                                <span id="submitBtnText">
+                                    <i class="fas fa-check me-2"></i>Daftar Sekarang
+                                </span>
+                                <span id="submitBtnLoading" style="display: none;">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Mendaftarkan...
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-container">
+            <div class="spinner-border text-light mb-3" style="width: 3rem; height: 3rem;"></div>
+            <h5>Menganalisis sertifikat dengan AI...</h5>
+            <p>Mohon tunggu, proses ini memakan waktu beberapa detik</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simple and reliable navigation script
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Registration form loading...');
+            
+            let currentStep = 1;
+            const maxSteps = 4;
+            let analysisCompleted = false;
+            let aiCategoryResult = null;
+            
+            // Get all elements
+            const nextBtn = document.getElementById('nextBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const submitBtn = document.getElementById('submitBtn');
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('id_certificate_image');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewImg = document.getElementById('previewImg');
+            const removeImageBtn = document.getElementById('removeImage');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            console.log('Elements found:', {
+                nextBtn: !!nextBtn,
+                prevBtn: !!prevBtn,
+                submitBtn: !!submitBtn,
+                fileInput: !!fileInput
+            });
+            
+            // Navigation functions
+            function updateStepView() {
+                console.log('Updating step view to:', currentStep);
+                
+                // Hide all sections
+                for (let i = 1; i <= maxSteps; i++) {
+                    const section = document.getElementById(`section${i}`);
+                    const tab = document.getElementById(`tab${i}`);
+                    
+                    if (section) {
+                        section.classList.remove('active');
+                        if (i === currentStep) {
+                            section.classList.add('active');
+                        }
+                    }
+                    
+                    if (tab) {
+                        tab.classList.remove('active', 'completed');
+                        if (i < currentStep) {
+                            tab.classList.add('completed');
+                        } else if (i === currentStep) {
+                            tab.classList.add('active');
+                        }
+                    }
+                }
+                
+                // Update buttons
+                if (prevBtn) {
+                    prevBtn.style.display = currentStep > 1 ? 'inline-block' : 'none';
+                }
+                
+                if (currentStep < maxSteps) {
+                    if (nextBtn) nextBtn.style.display = 'inline-block';
+                    if (submitBtn) submitBtn.style.display = 'none';
+                } else {
+                    if (nextBtn) nextBtn.style.display = 'none';
+                    if (submitBtn) submitBtn.style.display = 'inline-block';
+                }
+            }
+            
+            function validateStep(step) {
+                switch(step) {
+                    case 1:
+                        // Flexible field checking for Django forms
+                        const username = document.querySelector('#id_username, [name="username"]')?.value?.trim();
+                        const email = document.querySelector('#id_email, [name="email"]')?.value?.trim();
+                        const firstName = document.querySelector('#id_first_name, [name="first_name"]')?.value?.trim();
+                        const lastName = document.querySelector('#id_last_name, [name="last_name"]')?.value?.trim();
+                        
+                        console.log('Step 1 fields:', { username, email, firstName, lastName });
+                        return username && email && firstName && lastName;
+                        
+                    case 2:
+                        const namaLengkap = document.querySelector('#id_nama_lengkap, [name="nama_lengkap"]')?.value?.trim();
+                        const profesi = document.querySelector('#id_profesi, [name="profesi"]')?.value;
+                        const status = document.querySelector('#id_status, [name="status"]')?.value;
+                        
+                        console.log('Step 2 fields:', { namaLengkap, profesi, status });
+                        return namaLengkap && profesi && status;
+                        
+                    case 3:
+                        const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+                        console.log('Step 3 validation:', { hasFile, analysisCompleted });
+                        return hasFile && analysisCompleted;
+                        
+                    case 4:
+                        const terms = document.querySelector('#id_agree_terms, [name="agree_terms"]');
+                        const agreed = terms && terms.checked;
+                        console.log('Step 4 validation:', { agreed });
+                        return agreed;
+                        
+                    default:
+                        return true;
+                }
+            }
+            
+            function nextStep() {
+                console.log('Next step called, current:', currentStep);
+                
+                // Skip validation for testing - uncomment line below to enable
+                // if (!validateStep(currentStep)) {
+                //     alert(`Please complete all required fields for step ${currentStep}`);
+                //     return;
+                // }
+                
+                if (currentStep < maxSteps) {
+                    currentStep++;
+                    updateStepView();
+                    
+                    // Update summaries
+                    if (currentStep === 3) {
+                        updateDataSummary();
+                    } else if (currentStep === 4) {
+                        updateFinalSummary();
+                        updateCategoryPreview();
+                    }
+                }
+            }
+            
+            function previousStep() {
+                console.log('Previous step called');
+                if (currentStep > 1) {
+                    currentStep--;
+                    updateStepView();
+                }
+            }
+            
+            // Event listeners
+            if (nextBtn) {
+                nextBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Next button clicked');
+                    nextStep();
+                });
+            }
+            
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Previous button clicked');
+                    previousStep();
+                });
+            }
+            
+            // File upload handling
+            if (uploadArea && fileInput) {
+                uploadArea.addEventListener('click', () => fileInput.click());
+                
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+                
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        fileInput.files = files;
+                        handleFileSelect(files[0]);
+                    }
+                });
+                
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        handleFileSelect(e.target.files[0]);
+                    }
+                });
+            }
+            
+            function handleFileSelect(file) {
+                console.log('File selected:', file.name);
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Tipe file tidak didukung. Harap upload gambar JPEG, PNG, atau WebP.');
+                    return;
+                }
+                
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('Ukuran file terlalu besar. Maksimal 10MB.');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (previewImg && imagePreview) {
+                        previewImg.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                    }
+                    const analysisResult = document.getElementById('analysisResult');
+                    if (analysisResult) {
+                        analysisResult.style.display = 'none';
+                    }
+                    analysisCompleted = false;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Analysis button
+            if (analyzeBtn) {
+                analyzeBtn.addEventListener('click', function() {
+                    console.log('Analyze button clicked');
+                    if (!fileInput.files.length) {
+                        alert('Pilih file sertifikat terlebih dahulu.');
+                        return;
+                    }
+                    
+                    const formData = new FormData();
+                    formData.append('certificate_image', fileInput.files[0]);
+                    
+                    if (uploadArea) uploadArea.classList.add('analyzing');
+                    if (loadingOverlay) loadingOverlay.style.display = 'flex';
+                    
+                    fetch('/management/ajax-analyze-certificate/', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        if (uploadArea) uploadArea.classList.remove('analyzing');
+                        
+                        if (data.success) {
+                            showAnalysisResult(data);
+                            analysisCompleted = true;
+                            aiCategoryResult = data;
+                        } else {
+                            alert('Gagal menganalisis sertifikat: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Analysis error:', error);
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        if (uploadArea) uploadArea.classList.remove('analyzing');
+                        alert('Terjadi kesalahan: ' + error.message);
+                    });
+                });
+            }
+            
+            // Remove image button
+            if (removeImageBtn) {
+                removeImageBtn.addEventListener('click', () => {
+                    fileInput.value = '';
+                    if (imagePreview) imagePreview.style.display = 'none';
+                    const analysisResult = document.getElementById('analysisResult');
+                    if (analysisResult) analysisResult.style.display = 'none';
+                    analysisCompleted = false;
+                });
+            }
+            
+            function showAnalysisResult(data) {
+                const resultDiv = document.getElementById('analysisResult');
+                if (!resultDiv) return;
+                
+                const confidenceClass = `confidence-${data.confidence}`;
+                let confidenceText = '';
+                switch(data.confidence) {
+                    case 'high': confidenceText = 'Tinggi'; break;
+                    case 'medium': confidenceText = 'Sedang'; break;
+                    case 'low': confidenceText = 'Rendah'; break;
+                    default: confidenceText = 'Tidak Yakin'; break;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="analysis-result">
+                        <h6><i class="fas fa-robot me-2"></i>Hasil Analisis AI</h6>
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <strong>Kategori Terdeteksi:</strong><br>
+                                <span class="h5" style="color: #4fc3f7;">${data.category}</span><br>
+                                <small>Tingkat Kepercayaan: <span class="${confidenceClass}">${confidenceText}</span></small>
+                                ${data.alternatives && data.alternatives.length > 0 ? `
+                                    <br><small class="text-muted">Alternatif: ${data.alternatives.join(', ')}</small>
+                                ` : ''}
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+            }
+            
+            function updateDataSummary() {
+                const summaryContent = document.getElementById('summaryContent');
+                if (!summaryContent) return;
+                
+                const username = document.querySelector('#id_username, [name="username"]')?.value || '';
+                const email = document.querySelector('#id_email, [name="email"]')?.value || '';
+                const firstName = document.querySelector('#id_first_name, [name="first_name"]')?.value || '';
+                const lastName = document.querySelector('#id_last_name, [name="last_name"]')?.value || '';
+                const namaLengkap = document.querySelector('#id_nama_lengkap, [name="nama_lengkap"]')?.value || '';
+                const profesi = getSelectText('#id_profesi') || getSelectText('[name="profesi"]');
+                
+                summaryContent.innerHTML = `
+                    <div class="data-item"><strong>Nama:</strong> <span>${firstName} ${lastName}</span></div>
+                    <div class="data-item"><strong>Email:</strong> <span>${email}</span></div>
+                    <div class="data-item"><strong>Username:</strong> <span>${username}</span></div>
+                    <div class="data-item"><strong>Nama Lengkap:</strong> <span>${namaLengkap}</span></div>
+                    <div class="data-item"><strong>Profesi:</strong> <span>${profesi}</span></div>
+                `;
+            }
+            
+            function updateFinalSummary() {
+                const finalSummaryContent = document.getElementById('finalSummaryContent');
+                if (!finalSummaryContent) return;
+                
+                const namaLengkap = document.querySelector('#id_nama_lengkap, [name="nama_lengkap"]')?.value || '';
+                const email = document.querySelector('#id_email, [name="email"]')?.value || '';
+                const profesi = getSelectText('#id_profesi') || getSelectText('[name="profesi"]');
+                const status = getSelectText('#id_status') || getSelectText('[name="status"]');
+                const nomorRegistrasi = document.querySelector('#id_nomor_registrasi, [name="nomor_registrasi"]')?.value || '';
+                const tahunPengalaman = document.querySelector('#id_tahun_pengalaman, [name="tahun_pengalaman"]')?.value || '';
+                const nomorTelepon = document.querySelector('#id_nomor_telepon, [name="nomor_telepon"]')?.value || '';
+                const tanggalLahir = document.querySelector('#id_tanggal_lahir, [name="tanggal_lahir"]')?.value || '';
+                
+                finalSummaryContent.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="data-item"><strong>Nama Lengkap:</strong> <span>${namaLengkap}</span></div>
+                            <div class="data-item"><strong>Email:</strong> <span>${email}</span></div>
+                            <div class="data-item"><strong>Profesi:</strong> <span>${profesi}</span></div>
+                            <div class="data-item"><strong>Status:</strong> <span>${status}</span></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="data-item"><strong>No. Registrasi:</strong> <span>${nomorRegistrasi}</span></div>
+                            <div class="data-item"><strong>Pengalaman:</strong> <span>${tahunPengalaman} tahun</span></div>
+                            <div class="data-item"><strong>Telepon:</strong> <span>${nomorTelepon}</span></div>
+                            <div class="data-item"><strong>Tanggal Lahir:</strong> <span>${tanggalLahir}</span></div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            function updateCategoryPreview() {
+                if (!aiCategoryResult) return;
+                
+                const categoryPreview = document.getElementById('categoryPreview');
+                const categoryContent = document.getElementById('categoryContent');
+                if (!categoryPreview || !categoryContent) return;
+                
+                const confidenceClass = `confidence-${aiCategoryResult.confidence}`;
+                let confidenceText = '';
+                switch(aiCategoryResult.confidence) {
+                    case 'high': confidenceText = 'Tinggi'; break;
+                    case 'medium': confidenceText = 'Sedang'; break;
+                    case 'low': confidenceText = 'Rendah'; break;
+                    default: confidenceText = 'Tidak Yakin'; break;
+                }
+                
+                categoryContent.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <strong style="color: #4fc3f7; font-size: 1.1rem;">${aiCategoryResult.category}</strong><br>
+                            <small>Kepercayaan AI: <span class="${confidenceClass}">${confidenceText}</span></small>
+                            ${aiCategoryResult.alternatives && aiCategoryResult.alternatives.length > 0 ? `
+                                <br><small class="text-muted">Alternatif: ${aiCategoryResult.alternatives.join(', ')}</small>
+                            ` : ''}
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <i class="fas fa-certificate fa-2x" style="color: #4fc3f7;"></i>
+                        </div>
+                    </div>
+                `;
+                categoryPreview.style.display = 'block';
+            }
+            
+            function getSelectText(selector) {
+                const select = document.querySelector(selector);
+                return select ? select.options[select.selectedIndex]?.text || '' : '';
+            }
+            
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+            // Form submission handling
+            const registrationForm = document.getElementById('registrationForm');
+            if (registrationForm && submitBtn) {
+                registrationForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('Form submission intercepted');
+                    
+                    // Show loading state
+                    const submitBtnText = document.getElementById('submitBtnText');
+                    const submitBtnLoading = document.getElementById('submitBtnLoading');
+                    
+                    if (submitBtnText && submitBtnLoading) {
+                        submitBtnText.style.display = 'none';
+                        submitBtnLoading.style.display = 'inline';
+                        submitBtn.disabled = true;
+                    }
+                    
+                    // Show loading overlay
+                    if (loadingOverlay) {
+                        loadingOverlay.style.display = 'flex';
+                        // Update loading text for registration
+                        const loadingText = loadingOverlay.querySelector('h5');
+                        const loadingDesc = loadingOverlay.querySelector('p');
+                        if (loadingText) loadingText.textContent = 'Memproses registrasi...';
+                        if (loadingDesc) loadingDesc.textContent = 'Mohon tunggu, kami sedang membuat akun Anda';
+                    }
+                    
+                    // Create FormData with all form data
+                    const formData = new FormData(registrationForm);
+                    
+                    // Debug: log form data
+                    console.log('Form data being submitted:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(`${key}: ${value}`);
+                    }
+                    
+                    // Submit form via AJAX
+                    fetch('/authentication/register/', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken'),
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => {
+                        console.log('Registration response status:', response.status);
+                        
+                        // Check content type
+                        const contentType = response.headers.get('content-type');
+                        
+                        if (contentType && contentType.includes('application/json')) {
+                            // JSON response
+                            return response.json().then(data => {
+                                if (data.success) {
+                                    console.log('Registration successful:', data);
+                                    showSuccessMessage(data.message);
+                                    
+                                    // Redirect after delay
+                                    setTimeout(() => {
+                                        window.location.href = data.redirect_url || '/authentication/login/';
+                                    }, 2000);
+                                } else {
+                                    console.error('Registration failed:', data);
+                                    throw new Error(data.error || 'Registration failed');
+                                }
+                            });
+                        } else {
+                            // HTML response - check if success or error
+                            return response.text().then(html => {
+                                if (response.ok && (html.includes('registration-success') || html.includes('Registrasi berhasil'))) {
+                                    showSuccessMessage('Registrasi berhasil! Akun Anda telah dibuat.');
+                                    setTimeout(() => {
+                                        window.location.href = '/authentication/login/';
+                                    }, 2000);
+                                } else {
+                                    // Form has errors - update the page
+                                    hideLoadingState();
+                                    
+                                    // Extract error messages if any
+                                    const parser = new DOMParser();
+                                    const doc = parser.parseFromString(html, 'text/html');
+                                    const alerts = doc.querySelectorAll('.alert-danger');
+                                    
+                                    if (alerts.length > 0) {
+                                        let errorMsg = '';
+                                        alerts.forEach(alert => {
+                                            errorMsg += alert.textContent.trim() + ' ';
+                                        });
+                                        showErrorMessage(errorMsg.trim());
+                                    } else {
+                                        showErrorMessage('Terjadi kesalahan saat memproses registrasi. Periksa kembali formulir.');
+                                    }
+                                }
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Registration error:', error);
+                        hideLoadingState();
+                        showErrorMessage(error.message || 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.');
+                    });
+                });
+            }
+            
+            function showSuccessMessage(message = 'Registrasi berhasil!') {
+                hideLoadingState();
+                
+                // Create success overlay
+                const successOverlay = document.createElement('div');
+                successOverlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.8);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                `;
+                
+                successOverlay.innerHTML = `
+                    <div style="
+                        background: white;
+                        padding: 40px;
+                        border-radius: 20px;
+                        text-align: center;
+                        max-width: 450px;
+                        margin: 20px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+                    ">
+                        <div style="
+                            width: 80px;
+                            height: 80px;
+                            background: linear-gradient(135deg, #28a745, #20c997);
+                            border-radius: 50%;
+                            margin: 0 auto 20px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            animation: bounceIn 0.6s ease-out;
+                        ">
+                            <i class="fas fa-check" style="font-size: 2rem; color: white;"></i>
+                        </div>
+                        <h4 style="color: #28a745; margin-bottom: 15px;">Registrasi Berhasil!</h4>
+                        <p style="color: #6c757d; margin-bottom: 20px;">
+                            ${message}<br>
+                            <small>Anda akan diarahkan ke halaman sukses...</small>
+                        </p>
+                        <div style="
+                            background: #f8f9fa;
+                            padding: 15px;
+                            border-radius: 10px;
+                            border-left: 4px solid #28a745;
+                            margin-bottom: 15px;
+                        ">
+                            <small style="color: #495057;">
+                                <i class="fas fa-robot me-1"></i>
+                                Kategori kualifikasi telah ditentukan otomatis oleh AI
+                            </small>
+                        </div>
+                        <div style="
+                            width: 200px;
+                            height: 4px;
+                            background: #e9ecef;
+                            border-radius: 2px;
+                            margin: 0 auto;
+                            overflow: hidden;
+                        ">
+                            <div style="
+                                width: 0%;
+                                height: 100%;
+                                background: linear-gradient(90deg, #4fc3f7, #29b6f6);
+                                border-radius: 2px;
+                                animation: loadingBar 2s ease-out forwards;
+                            "></div>
+                        </div>
+                        <small style="color: #6c757d; margin-top: 10px; display: block;">
+                            Mempersiapkan dashboard Anda...
+                        </small>
+                    </div>
+                `;
+                
+                // Add loading bar animation
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes loadingBar {
+                        from { width: 0%; }
+                        to { width: 100%; }
+                    }
+                `;
+                document.head.appendChild(style);
+                
+                document.body.appendChild(successOverlay);
+            }
+            
+            function showErrorMessage(message) {
+                hideLoadingState();
+                
+                // Create error message
+                const errorAlert = document.createElement('div');
+                errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+                errorAlert.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 10000; max-width: 400px;';
+                errorAlert.innerHTML = `
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>Registrasi Gagal</h6>
+                    <p class="mb-0">${message}</p>
+                    <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+                `;
+                
+                document.body.appendChild(errorAlert);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (errorAlert.parentElement) {
+                        errorAlert.remove();
+                    }
+                }, 5000);
+            }
+            
+            function hideLoadingState() {
+                // Hide loading overlay
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+                
+                // Reset submit button
+                const submitBtnText = document.getElementById('submitBtnText');
+                const submitBtnLoading = document.getElementById('submitBtnLoading');
+                
+                if (submitBtnText && submitBtnLoading && submitBtn) {
+                    submitBtnText.style.display = 'inline';
+                    submitBtnLoading.style.display = 'none';
+                    submitBtn.disabled = false;
+                }
+            }
+            
+            // Make functions globally accessible for debugging
+            window.debugRegistration = {
+                currentStep: () => currentStep,
+                nextStep,
+                previousStep,
+                validateStep,
+                analysisCompleted: () => analysisCompleted,
+                aiCategoryResult: () => aiCategoryResult
+            };
+            
+            console.log('Registration form initialized successfully');
+        });
+        
+        // Global debug function
+        function debugStep() {
+            console.log('=== DEBUG INFO ===');
+            if (window.debugRegistration) {
+                console.log('Current step:', window.debugRegistration.currentStep());
+                console.log('Analysis completed:', window.debugRegistration.analysisCompleted());
+                console.log('AI result:', window.debugRegistration.aiCategoryResult());
+            }
+            
+            const allInputs = document.querySelectorAll('#registrationForm input, #registrationForm select');
+            console.log('Form fields:');
+            allInputs.forEach(input => {
+                console.log(`- ${input.name || input.id}: "${input.value}" (type: ${input.type})`);
+            });
+            
+            alert('Debug info logged to console. Check F12 Developer Tools.');
+        }
+    </script>
