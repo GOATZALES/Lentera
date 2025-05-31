@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-xl">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h1 class="text-3xl font-bold text-indigo-700">{{ page_title }}</h1>
+        <a href="{% url 'emergency:activate_emergency' %}" class="text-sm text-blue-600 hover:underline">« Kembali ke Aktivasi Darurat</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="p-4 mb-4 text-sm rounded-lg
+                {% if message.tags == 'success' %} bg-green-100 text-green-700 {% endif %}
+                {% if message.tags == 'error' %} bg-red-100 text-red-700 {% endif %}
+                {% if message.tags == 'info' %} bg-blue-100 text-blue-700 {% endif %}"
+                role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if active_emergencies %}
+        <div class="space-y-4">
+            {% for event in active_emergencies %}
+            <div class="p-4 border rounded-lg {% if event.matching_acceleration_enabled %}border-indigo-300 bg-indigo-50{% else %}border-gray-200{% endif %}">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-800">{{ event.disaster_type }}</h2>
+                        <p class="text-sm text-gray-600">{{ event.location_description }} - Aktif sejak: {{ event.activation_time|date:"d M Y, H:i" }}</p>
+                    </div>
+                    <div class="mt-3 sm:mt-0">
+                        <a href="{% url 'emergency:configure_matching_acceleration' event.id %}" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Atur Akselerasi
+                        </a>
+                    </div>
+                </div>
+                {% if event.matching_acceleration_enabled %}
+                <div class="mt-3 pt-3 border-t border-indigo-200">
+                    <p class="text-sm font-medium text-green-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        Akselerasi Pencocokan AKTIF
+                    </p>
+                    <ul class="list-disc list-inside text-sm text-gray-700 ml-4 mt-1">
+                        <li>Radius Pencocokan: <strong>{{ event.expanded_matching_radius_km }} km</strong></li>
+                        <li>Prioritas Antrian: Tinggi</li>
+                        <li>Tarif Darurat: Berlaku</li>
+                        <li>Target Respons: 2-4 Jam</li>
+                    </ul>
+                </div>
+                {% else %}
+                <div class="mt-2">
+                    <p class="text-sm text-gray-500 italic">Akselerasi pencocokan belum diaktifkan.</p>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-600 italic">Tidak ada kejadian darurat aktif yang dapat dikonfigurasi akselerasinya.</p>
+    {% endif %}
+</div>
+{% endblock %}
