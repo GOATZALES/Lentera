@@ -45,6 +45,16 @@ class EmergencyEvent(models.Model):
         null=True, blank=True,
         help_text="Radius pencocokan yang diperluas dalam KM. Kosongkan jika menggunakan radius standar."
     )
+
+    ai_regional_risk_assessment_results_json = models.JSONField(
+        null=True, blank=True, 
+        help_text="Hasil penilaian risiko dari AI untuk wilayah terdampak. Format: [{'region': 'nama', 'level': 'Tinggi', ...}]"
+    )
+    ai_pre_positioning_recommendations_text = models.TextField(
+        blank=True, null=True,
+        help_text="Rekomendasi pre-positioning SDM atau sumber daya dari AI."
+    )
+
     # Emergency rates & priority queue are implied if matching_acceleration_enabled is True.
     # Rapid deployment target is an operational goal.
     # --------------------------------------------------
@@ -63,6 +73,8 @@ class EmergencyEvent(models.Model):
             self.manually_triggered_by = user
         if api_details:
             self.api_alert_details = api_details
+        self.ai_regional_risk_assessment_results_json = None 
+        self.ai_pre_positioning_recommendations_text = None
         self.save()
 
     def deactivate(self):

@@ -455,7 +455,7 @@ for i in range(30):
     generated_faskes.append(faskes_entry)
 
 # Add the generated data to the original DUMMY_FASKES_DATA
-DUMMY_FASKES_DATA.extend(generated_faskes)
+#DUMMY_FASKES_DATA.extend(generated_faskes)
 
 print(f"Total faskes data generated: {len(DUMMY_FASKES_DATA)}")
 # For demonstration, print the first new entry and the last new entry

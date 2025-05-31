@@ -1,97 +1,190 @@
-{% extends "base_planning.html" %} {# Diubah #}
+{% extends "base_planning.html" %}
 {% load static %}
 {% load planning_extras %}
+{% load humanize %} {# Untuk format angka jika perlu #}
 
 {% block title %}Dashboard Perencanaan - Faskes {{ faskes_id }}{% endblock %}
 
 {% block extra_css %}
-    {# {{ block.super }} Tidak perlu jika base_planning tidak extend base lain #}
     <style>
-        /* ... (style spesifik dashboard yang sudah Anda buat sebelumnya) ... */
-        .planning-container { padding: 24px; } /* Konten utama diberi padding */
-        .planning-card {
-            background: white;
+        .planning-container { padding: 24px; }
+        .stat-card-group { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; }
+        .stat-card {
+            background-color: #fff;
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-            margin-bottom: 20px;
-            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            flex: 1;
+            min-width: 220px; /* Agar tidak terlalu kecil di layar besar */
+            border-left: 5px solid; /* Aksen warna */
+            transition: transform 0.2s ease-in-out;
         }
-        .planning-card h2 {
-            color: #1e293b;
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card.info { border-left-color: #4facfe; } /* Biru */
+        .stat-card.success { border-left-color: #10b981; } /* Hijau */
+        .stat-card.warning { border-left-color: #f59e0b; } /* Oranye */
+        .stat-card-title {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .stat-card-value {
+            font-size: 1.75rem;
             font-weight: 700;
-            margin-bottom: 16px;
-            font-size: 1.75rem; /* Sesuaikan dengan style management */
-            padding-bottom: 10px;
-            border-bottom: 2px solid #f1f5f9; /* Mirip .month-title di histori_kinerja.css */
+            color: #343a40;
         }
-        .table { margin-top: 20px; }
-        .btn-info-planning {
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Mirip stat-card.shifts */
-            color: white; border: none; padding: .375rem .75rem;
-            font-size: 0.875rem; border-radius: 0.25rem;
+        .stat-card-value small { font-size: 1rem; font-weight: 500; }
+        .chart-card, .alerts-card, .history-card {
+            background: white; border-radius: 12px; padding: 25px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.07); margin-bottom: 30px;
         }
-        .btn-info-planning:hover { opacity: 0.9; }
-        .alert-planning.danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding:1rem; border-radius:8px; }
-        .profile-header { text-align: center; margin-bottom: 30px;} /* Meniru .profile-header */
+        .card-header-title {
+            color: #1e293b; font-weight: 700; margin-bottom: 20px;
+            font-size: 1.5rem; padding-bottom: 10px;
+            border-bottom: 2px solid #f1f5f9; display: flex; align-items: center;
+        }
+        .card-header-title i { margin-right: 10px; color: #4facfe; }
+        .alert-item {
+            background-color: #fff3cd; /* Kuning muda untuk alert */
+            border-left: 5px solid #ffeeba;
+            padding: 15px; margin-bottom: 10px; border-radius: 8px;
+        }
+        .alert-item strong { color: #856404; }
+        .table thead th { background-color: #f8f9fa; color: #495057; font-weight: 600; }
+        .badge { font-size: 0.8em; padding: .4em .6em; }
+        .btn-view-detail {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* var(--secondary-gradient) */
+            color: white; font-size: 0.8rem; padding: 5px 10px;
+        }
+        .btn-view-detail:hover { opacity: 0.9; }
+        .profile-header { text-align: center; margin-bottom: 30px;}
         .profile-header .profile-name { font-size: 28px; font-weight: 700; color: #1e293b;}
         .profile-header .profile-profession { font-size: 16px; color: #64748b;}
+        .no-data-placeholder {
+            text-align: center; padding: 40px 20px; color: #6c757d;
+            border: 2px dashed #e0e0e0; border-radius: 8px; background-color: #fbfbfb;
+        }
+        .no-data-placeholder i { font-size: 2rem; margin-bottom: 10px; }
     </style>
 {% endblock %}
 
-{% block content_planning %} {# Diubah #}
+{% block content_planning %}
 <div class="planning-container">
     <div class="profile-header">
-        <h1 class="profile-name">Dashboard Perencanaan</h1>
+        <h1 class="profile-name">Dashboard Perencanaan AI</h1>
         <p class="profile-profession">Faskes ID: <strong>{{ faskes_id }}</strong></p>
     </div>
 
     {% if error_message %}
-        <div class="alert alert-danger alert-planning danger">{{ error_message }}</div>
+        <div class="alert alert-danger">{{ error_message }}</div>
     {% endif %}
 
-    <div class="planning-card">
-        <h2><i class="fas fa-chart-line" style="color: #4facfe;"></i> Visualisasi Prediksi vs Aktual (Dokter Umum)</h2>
-        <div style="width: 100%; max-width: 900px; margin: auto; height: 400px;">
-            <canvas id="demandChart"></canvas>
+    <!-- Ringkasan Metrik Utama -->
+    <div class="stat-card-group">
+        <div class="stat-card info">
+            <div class="stat-card-title">Forecast Berikutnya</div>
+            {% if latest_forecast_summary %}
+                <div class="stat-card-value">{{ latest_forecast_summary.period_start|date:"d M" }} - {{ latest_forecast_summary.period_end|date:"d M Y" }}</div>
+                <small>Dokter Umum: {{ latest_forecast_summary.parsed_ai_output.predicted_staffing_demand.Dokter_Umum|default:0 }} | Perawat: {{ latest_forecast_summary.parsed_ai_output.predicted_staffing_demand.Perawat|default:0 }}</small>
+            {% else %}
+                <div class="stat-card-value">N/A</div>
+                <small>Belum ada forecast mendatang.</small>
+            {% endif %}
+        </div>
+        <div class="stat-card success">
+            <div class="stat-card-title">Rata-rata Akurasi</div>
+            {% if accuracy_trend is not None %}
+                <div class="stat-card-value">{{ accuracy_trend }}<small>%</small></div>
+                <small>Dari feedback yang diterima</small>
+            {% else %}
+                <div class="stat-card-value">N/A</div>
+                <small>Belum ada feedback akurasi.</small>
+            {% endif %}
+        </div>
+        <div class="stat-card warning">
+            <div class="stat-card-title">Alerts Aktif</div>
+             <div class="stat-card-value">{{ recent_alerts|length }}</div>
+            {% if recent_alerts %}
+                <small>Perlu perhatian pada periode mendatang</small>
+            {% else %}
+                <small>Tidak ada alert penting saat ini</small>
+            {% endif %}
         </div>
     </div>
 
-    <div class="planning-card">
-        <h2><i class="fas fa-history" style="color: #667eea;"></i> Riwayat Forecast Terbaru</h2>
-        {% if forecast_history %}
+    <!-- Alerts dan Rekomendasi AI -->
+    {% if recent_alerts %}
+    <div class="alerts-card">
+        <h2 class="card-header-title"><i class="fas fa-exclamation-triangle"></i>Peringatan & Rekomendasi AI</h2>
+        {% for alert in recent_alerts %}
+            <div class="alert-item">
+                <strong>Periode {{ alert.period }}:</strong> {{ alert.message|linebreaksbr }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Grafik Gabungan -->
+    <div class="row">
+        <div class="col-lg-7 mb-4">
+            <div class="chart-card h-100">
+                <h2 class="card-header-title"><i class="fas fa-chart-line"></i>Tren Prediksi Kebutuhan Staf (15 Periode Terakhir)</h2>
+                <div style="height: 350px;">
+                    <canvas id="staffingTrendChart"></canvas>
+                </div>
+                <script id="staffingTrendDataScript" type="application/json">{{ staffing_trend_chart_data_json|safe }}</script>
+            </div>
+        </div>
+        <div class="col-lg-5 mb-4">
+            <div class="chart-card h-100">
+                <h2 class="card-header-title"><i class="fas fa-tasks"></i>Perbandingan Prediksi vs Aktual (Dokter Umum, 10 Periode Terakhir)</h2>
+                 <div style="height: 350px;">
+                    <canvas id="historicalComparisonChart"></canvas>
+                </div>
+                <script id="historicalComparisonDataScript" type="application/json">{{ historical_comparison_chart_data_json|safe }}</script>
+            </div>
+        </div>
+    </div>
+
+    <!-- Riwayat Forecast Terbaru -->
+    <div class="history-card">
+        <h2 class="card-header-title"><i class="fas fa-history"></i>Riwayat Forecast Terbaru (7 Periode Terakhir)</h2>
+        {% if forecast_history_list %}
             <div class="table-responsive">
-                <table class="table table-hover"> {# Tambah table-hover agar mirip #}
-                    <thead class="table-light"> {# Header tabel lebih jelas #}
+                <table class="table table-hover">
+                    <thead class="table-light">
                         <tr>
-                            <th>ID Log AI</th>
+                            <th>ID Log</th>
                             <th>Periode</th>
-                            <th>Diminta Pada</th>
-                            <th>Prediksi Dokter Umum</th>
-                            <th>Akurasi Keseluruhan</th>
+                            <th>Dibuat</th>
+                            <th>Dokter Umum (Prediksi)</th>
+                            <th>Perawat (Prediksi)</th>
+                            <th>Akurasi (%)</th>
                             <th>Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for forecast in forecast_history %}
+                        {% for forecast in forecast_history_list %}
                         <tr>
                             <td>{{ forecast.ai_request_log_id }}</td>
-                            <td>{{ forecast.period_start }} s/d {{ forecast.period_end }}</td>
+                            <td>{{ forecast.period_start }} - {{ forecast.period_end }}</td>
                             <td>{{ forecast.requested_at|date:"d M Y, H:i" }}</td>
-                            <td>{{ forecast.parsed_ai_output.predicted_staffing_demand.Dokter_Umum|default:"N/A" }}</td>
+                            <td>{{ forecast.parsed_ai_output.predicted_staffing_demand.Dokter_Umum|default:"-" }}</td>
+                            <td>{{ forecast.parsed_ai_output.predicted_staffing_demand.Perawat|default:"-" }}</td>
                             <td>
                                 {% if forecast.feedback_info.overall_accuracy_score is not None %}
-                                    <span class="badge 
-                                        {% if forecast.feedback_info.overall_accuracy_score >= 75 %}bg-success{% elif forecast.feedback_info.overall_accuracy_score >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                                        {{ forecast.feedback_info.overall_accuracy_score }}%
+                                    <span class="badge {% if forecast.feedback_info.overall_accuracy_score >= 75 %}bg-success{% elif forecast.feedback_info.overall_accuracy_score >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                        {{ forecast.feedback_info.overall_accuracy_score }}
                                     </span>
                                 {% else %}
-                                    <span class="badge bg-secondary">Belum ada feedback</span>
+                                    <span class="badge bg-secondary">N/A</span>
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'planning:forecast_detail' forecast.ai_request_log_id %}" class="btn btn-sm btn-info-planning">
-                                    <i class="fas fa-eye"></i> Detail & Feedback
+                                <a href="{% url 'planning:forecast_detail' forecast.ai_request_log_id %}" class="btn btn-sm btn-view-detail">
+                                    <i class="fas fa-eye"></i> Detail
                                 </a>
                             </td>
                         </tr>
@@ -100,96 +193,98 @@
                 </table>
             </div>
         {% else %}
-            <div class="text-center p-3">
-                <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
-                <p>Belum ada riwayat forecast.</p>
+            <div class="no-data-placeholder">
+                <i class="fas fa-search-minus"></i>
+                <p>Belum ada riwayat forecast yang dapat ditampilkan.</p>
             </div>
         {% endif %}
     </div>
 </div>
 {% endblock %}
 
-{% block extra_js_planning %} {# Diubah #}
+{% block extra_js_planning %}
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Mengambil data chart dari context view, pastikan ini benar
-        // Cara aman adalah dengan menaruhnya di elemen data atau script tag khusus
-        let chartData;
-        try {
-            chartData = JSON.parse('{{ chart_data_json|safe|escapejs }}');
-        } catch (e) {
-            console.error("Gagal parsing chart_data_json:", e);
-            chartData = null; // Set ke null jika gagal parse
-        }
+        function renderChart(canvasId, chartDataScriptId, chartType = 'line', datasetsCallback) {
+            const dataElement = document.getElementById(chartDataScriptId);
+            const canvasElement = document.getElementById(canvasId);
+            let chartJsonData = null;
 
-        const demandChartCanvas = document.getElementById('demandChart');
-
-        if (demandChartCanvas && chartData && chartData.labels && chartData.labels.length > 0) {
-            const ctx = demandChartCanvas.getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: 'Prediksi Dokter Umum',
-                        data: chartData.predicted_doctors,
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                        tension: 0.2,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                    }, {
-                        label: 'Aktual Dokter Umum',
-                        data: chartData.actual_doctors,
-                        borderColor: 'rgb(255, 99, 132)',
-                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
-                        tension: 0.2,
-                        fill: true,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        spanGaps: true, // Untuk menghubungkan garis jika ada data null
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: '#64748b', font: { weight: '500' } },
-                            grid: { color: '#eef2f7' }
-                        },
-                        x: {
-                            ticks: { color: '#64748b', font: { weight: '500' } },
-                            grid: { display: false }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: { color: '#1e293b', font: { weight: '600' } }
-                        },
-                        tooltip: {
-                            backgroundColor: '#1e293b',
-                            titleColor: '#fff',
-                            bodyColor: '#fff',
-                            padding: 10,
-                            cornerRadius: 6,
-                        }
-                    },
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
+            if (dataElement) {
+                try {
+                    chartJsonData = JSON.parse(dataElement.textContent);
+                } catch (e) {
+                    console.error(`Gagal parsing data untuk chart ${canvasId}:`, e);
                 }
-            });
-        } else {
-            if(demandChartCanvas) {
-                demandChartCanvas.parentElement.innerHTML = "<p class='text-center text-muted mt-3 p-4 border rounded'><i class='fas fa-chart-bar me-2'></i>Tidak ada data yang cukup untuk ditampilkan pada grafik saat ini.</p>";
+            } else {
+                console.error(`Elemen script #${chartDataScriptId} tidak ditemukan.`);
             }
-            console.log("Tidak ada data untuk chart atau chart canvas tidak ditemukan.");
+
+            if (canvasElement && chartJsonData && chartJsonData.labels && chartJsonData.labels.length > 0) {
+                const ctx = canvasElement.getContext('2d');
+                new Chart(ctx, {
+                    type: chartType,
+                    data: {
+                        labels: chartJsonData.labels,
+                        datasets: datasetsCallback(chartJsonData)
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { color: '#64748b', font: { weight: '500' } }, grid: { color: '#eef2f7' } },
+                            x: { ticks: { color: '#64748b', font: { weight: '500' } }, grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { position: 'top', labels: { color: '#1e293b', font: { weight: '600' } } },
+                            tooltip: { backgroundColor: '#1e293b', titleColor: '#fff', bodyColor: '#fff', padding: 10, cornerRadius: 6, }
+                        },
+                        interaction: { mode: 'index', intersect: false, },
+                    }
+                });
+            } else {
+                if (canvasElement && canvasElement.parentElement) {
+                     canvasElement.parentElement.innerHTML = "<div class='no-data-placeholder'><i class='fas fa-chart-bar'></i><p>Data tidak cukup untuk grafik.</p></div>";
+                }
+                console.log(`Data chart tidak valid atau canvas ${canvasId} tidak ditemukan.`);
+            }
         }
+
+        // Render Staffing Trend Chart
+        renderChart('staffingTrendChart', 'staffingTrendDataScript', 'line', (data) => [
+            {
+                label: 'Prediksi Dokter Umum',
+                data: data.doctors,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.2, fill: true, pointRadius: 3,
+            },
+            {
+                label: 'Prediksi Perawat',
+                data: data.nurses,
+                borderColor: 'rgb(255, 159, 64)',
+                backgroundColor: 'rgba(255, 159, 64, 0.1)',
+                tension: 0.2, fill: true, pointRadius: 3,
+            }
+        ]);
+
+        // Render Historical Comparison Chart
+        renderChart('historicalComparisonChart', 'historicalComparisonDataScript', 'bar', (data) => [
+            {
+                label: 'Prediksi Dokter Umum',
+                data: data.predicted_doctors,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgb(75, 192, 192)',
+                borderWidth: 1
+            },
+            {
+                label: 'Aktual Dokter Umum',
+                data: data.actual_doctors,
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgb(255, 99, 132)',
+                borderWidth: 1
+            }
+        ]);
     });
     </script>
 {% endblock %}
