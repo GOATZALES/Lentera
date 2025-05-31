@@ -1,0 +1,166 @@
+{% extends 'base_planning.html' %}
+{% load static %}
+{% load planning_extras %}
+
+{% block title %}Perencanaan Budget Kuartalan - Faskes {{ faskes_id }}{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <!-- <link rel="stylesheet" href="{% static 'planning/css/planning_budget.css' %}"> -->
+    <style>
+        .planning-form-container { padding: 32px; }
+        .planning-form-section {
+            background: #f8fafc; padding: 24px; border-radius: 12px;
+            border: 1px solid #e2e8f0; margin-bottom: 20px;
+        }
+        .planning-section-title {
+            font-size: 18px; font-weight: 700; color: #1e293b;
+            margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+        }
+        .planning-form-group { margin-bottom: 1rem; }
+        .planning-form-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: .5rem; display: block; }
+        .planning-form-control {
+            display: block; width: 100%; padding: .75rem 1rem; font-size: 14px;
+            border: 2px solid #e5e7eb; border-radius: 8px;
+        }
+        .planning-form-control:focus { border-color: #4facfe; outline: 0; box-shadow: 0 0 0 3px rgba(79,172,254,0.1); }
+        .planning-btn-primary {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;
+            padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600;
+        }
+        .planning-btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .budget-results-card {
+            background: white; border-radius: 12px; padding: 24px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08); margin-top: 30px;
+            border: 1px solid #e2e8f0;
+        }
+        .budget-results-card h2 { color: #1e293b; font-weight: 700; }
+        .budget-results-card p strong { color: #334155; }
+        .alert-planning.warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding:1rem; margin-bottom:1rem; border-radius:8px;}
+    </style>
+{% endblock %}
+
+{% block content_planning %}
+<div class="planning-form-container">
+    <div class="profile-header" style="text-align: center; margin-bottom: 30px;">
+        <h1 class="profile-name" style="font-size: 24px;">Perencanaan Budget Kuartalan</h1>
+         <p class="profile-profession" style="font-size: 15px; color: #64748b;">Faskes ID: {{ faskes_id }}</p>
+    </div>
+
+    <form method="POST" class="mb-5">
+        {% csrf_token %}
+        <div class="planning-form-section">
+            <div class="planning-section-title"><i class="fas fa-calendar-check" style="color: #4facfe;"></i> Periode Kuartal</div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="quarter_start_date" class="planning-form-label">Tanggal Mulai Kuartal*</label>
+                    <input type="date" class="planning-form-control" id="quarter_start_date" name="quarter_start_date" value="{{ form_data.quarter_start_date }}" required>
+                    <small class="form-text text-muted">AI akan membuat forecast per bulan untuk 3 bulan dari tanggal ini.</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="planning-form-section">
+            <div class="planning-section-title"><i class="fas fa-info-circle" style="color: #4facfe;"></i> Informasi Umum Konteks Kuartal</div>
+            <div class="planning-form-group">
+                <label for="historical_summary_quarterly" class="planning-form-label">Ringkasan Historis Umum Kuartal Ini</label>
+                <textarea class="planning-form-control" id="historical_summary_quarterly" name="historical_summary_quarterly" rows="2">{{ form_data.historical_summary_quarterly|default:"Data historis umum untuk kuartal ini." }}</textarea>
+            </div>
+            <div class="planning-form-group">
+                <label for="seasonal_patterns_quarterly" class="planning-form-label">Pola Musiman Umum Kuartal Ini</label>
+                <textarea class="planning-form-control" id="seasonal_patterns_quarterly" name="seasonal_patterns_quarterly" rows="2">{{ form_data.seasonal_patterns_quarterly|default:"Pola musiman umum untuk kuartal ini." }}</textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-4"><div class="planning-form-group">
+                    <label for="bmkg_weather_forecast_quarterly" class="planning-form-label">Prakiraan Cuaca Umum Kuartal</label>
+                    <input type="text" class="planning-form-control" id="bmkg_weather_forecast_quarterly" name="bmkg_weather_forecast_quarterly" value="{{ form_data.bmkg_weather_forecast_quarterly }}">
+                </div></div>
+                <div class="col-md-4"><div class="planning-form-group">
+                    <label for="local_events_calendar_quarterly" class="planning-form-label">Event Lokal Utama Kuartal</label>
+                    <input type="text" class="planning-form-control" id="local_events_calendar_quarterly" name="local_events_calendar_quarterly" value="{{ form_data.local_events_calendar_quarterly }}">
+                </div></div>
+                <div class="col-md-4"><div class="planning-form-group">
+                     <label for="mudik_calendar_info_quarterly" class="planning-form-label">Info Mudik Kuartal</label>
+                    <input type="text" class="planning-form-control" id="mudik_calendar_info_quarterly" name="mudik_calendar_info_quarterly" value="{{ form_data.mudik_calendar_info_quarterly }}">
+                </div></div>
+            </div>
+        </div>
+        <hr>
+        <p class="text-muted"><small>Anda juga bisa mengisi detail per bulan di bawah ini untuk forecast yang lebih akurat per bulannya. Jika kosong, data umum kuartal akan digunakan.</small></p>
+        
+        {% for i in "123" %} {# Loop untuk 3 bulan #}
+        <div class="planning-form-section">
+            <div class="planning-section-title"><i class="far fa-calendar-alt" style="color: #667eea;"></i> Input Spesifik untuk Bulan ke-{{ i }} (Opsional)</div>
+             <div class="planning-form-group">
+                <label for="historical_summary_month_{{ forloop.counter }}" class="planning-form-label">Ringkasan Historis Bulan ke-{{ forloop.counter }}</label>
+                <textarea class="planning-form-control" id="historical_summary_month_{{ forloop.counter }}" name="historical_summary_month_{{ forloop.counter }}" rows="2">{{ form_data|get_item:"historical_summary_month_"|add:forloop.counter0|default:"" }}</textarea> {# Gunakan forloop.counter0 jika key Anda historical_summary_month_0, atau forloop.counter jika historical_summary_month_1 #}
+            </div>
+            <div class="planning-form-group">
+                <label for="seasonal_patterns_month_{{ forloop.counter }}" class="planning-form-label">Pola Musiman Bulan ke-{{ forloop.counter }}</label>
+                <textarea class="planning-form-control" id="seasonal_patterns_month_{{ forloop.counter }}" name="seasonal_patterns_month_{{ forloop.counter }}" rows="2">{{ form_data|get_item:"seasonal_patterns_month_"|add:forloop.counter0|default:"" }}</textarea>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div style="text-align:right;">
+            <button type="submit" class="btn planning-btn-primary"><i class="fas fa-calculator"></i> Hitung Estimasi Budget Kuartalan</button>
+        </div>
+    </form>
+
+    {% if budget_details %}
+        <div class="budget-results-card">
+            <h2>Hasil Estimasi Budget untuk Kuartal Mulai {{ budget_details.quarter_start }}</h2>
+            {% if not budget_details.all_successful %}
+                <div class="alert alert-warning alert-planning warning">Peringatan: Tidak semua forecast bulanan berhasil dibuat. Estimasi mungkin tidak lengkap.</div>
+            {% endif %}
+            <p><strong>Total Estimasi Biaya Minimum (Rp):</strong> {{ budget_details.total_min_cost_rp|floatformat:0 }}</p>
+            <p><strong>Total Estimasi Biaya Maksimum (Rp):</strong> {{ budget_details.total_max_cost_rp|floatformat:0 }}</p>
+            
+            <h3 class="mt-4">Rincian per Periode (Bulanan):</h3>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Periode</th>
+                            <th>Estimasi Biaya Min (Rp)</th>
+                            <th>Estimasi Biaya Max (Rp)</th>
+                            <th>Detail Prediksi Staf</th>
+                            <th>ID Log AI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in budget_details.monthly_breakdown %}
+                        <tr>
+                            <td>{{ item.period }}</td>
+                            {% if item.error %}
+                                <td colspan="3" class="text-danger">Error: {{ item.error }}</td>
+                                <td>N/A</td>
+                            {% else %}
+                                <td>{{ item.details.estimated_cost_range_rp.min_cost|floatformat:0 }}</td>
+                                <td>{{ item.details.estimated_cost_range_rp.max_cost|floatformat:0 }}</td>
+                                <td>
+                                    <ul class="list-unstyled mb-0">
+                                    {% for role, count in item.details.predicted_staffing_demand.items %}
+                                        <li>{{ role }}: {{ count }}</li>
+                                    {% empty %}
+                                        <li>-</li>
+                                    {% endfor %}
+                                    </ul>
+                                </td>
+                                <td>
+                                    {% if item.log_id %}
+                                    <a href="{% url 'planning:forecast_detail' item.log_id %}" class="btn btn-sm btn-outline-primary">{{ item.log_id }}</a>
+                                    {% else %}
+                                    N/A
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -6,3 +6,4 @@ requests
 urllib3
 python-dotenv 
 google-generativeai
+python-dateutil

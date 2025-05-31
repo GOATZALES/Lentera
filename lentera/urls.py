@@ -21,6 +21,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('authentication/', include('authentication.urls')), 
     path('api/ai/', include('ai_service.urls', namespace='ai_service')),
+    path('faskes/planning/', include('planning.urls', namespace='planning')),
     path('management/', include('management.urls')), 
     path('emergency/', include('emergency.urls')),
 ] 
