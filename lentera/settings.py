@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'planning',
     "management",
     'emergency',
+    'billing',
 ]
 
 MIDDLEWARE = [
