@@ -1,3 +1,6 @@
+{% load static %}
+
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -410,7 +413,7 @@
 
     <nav class="navbar" id="navbar">
         <div class="container">
-            <a href="#" class="navbar-brand"><i class="fas fa-lightbulb"></i>Lentera</a>
+            <a href="#" class="navbar-brand"><img src="{% static 'images/logo-text-small.png' %}" alt="Logo Perusahaan" class="w-full h-auto"></a>
             <ul class="nav-links" id="navLinks">
                 <li><a href="#hero" class="active">Beranda</a></li>
                 <li><a href="#features">Fitur</a></li>
@@ -573,7 +576,7 @@
     <!-- Footer -->
     <footer>
         <div class="container">
-            <a href="#" class="footer-logo"><i class="fas fa-lightbulb"></i>Lentera</a>
+            <a href="#" class="footer-logo"><img src="{% static 'images/logo-text-small.png' %}" alt="Logo Perusahaan"></a>
             <ul class="footer-links">
                 <li><a href="#features">Fitur</a></li>
                 <li><a href="#how-it-works">Cara Kerja</a></li>
