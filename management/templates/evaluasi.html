@@ -1,0 +1,409 @@
+{% extends 'templates/management_base.html' %}
+
+{% load static %}
+
+{% block title %}Evaluasi Kinerja - {{ nakes.nama_lengkap }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/evaluasi.css' %}"/>
+{% endblock %}
+
+{% block content %}
+<div class="evaluasi-container">
+    {% if has_data %}
+        <!-- Performance Overview Cards -->
+        <div class="overview-section">
+            <h2 class="section-title">
+                <i class="fas fa-chart-line"></i>
+                Ringkasan Kinerja
+            </h2>
+            
+            <div class="overview-cards">
+                <div class="overview-card total-shifts">
+                    <div class="card-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-number">{{ total_shifts }}</span>
+                        <span class="card-label">Total Shift</span>
+                        <span class="card-sublabel">{{ total_hours }} jam kerja</span>
+                    </div>
+                </div>
+                
+                <div class="overview-card rating">
+                    <div class="card-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-number">{{ avg_rating }}</span>
+                        <span class="card-label">Rating Rata-rata</span>
+                        <div class="rating-stars-display">
+                            {% for star in "12345" %}
+                                {% if forloop.counter <= avg_rating %}
+                                    <i class="fas fa-star star-filled"></i>
+                                {% else %}
+                                    <i class="fas fa-star star-empty"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overview-card earnings">
+                    <div class="card-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-number">Rp {{ total_earnings|floatformat:0 }}</span>
+                        <span class="card-label">Total Pendapatan</span>
+                        <span class="card-sublabel">{{ total_reviews }} review diterima</span>
+                    </div>
+                </div>
+                
+                <div class="overview-card trend">
+                    <div class="card-icon">
+                        <i class="fas fa-trending-up"></i>
+                    </div>
+                    <div class="card-content">
+                        <span class="card-number">{{ recent_performance.avg_rating|floatformat:1 }}</span>
+                        <span class="card-label">Performa 6 Bulan</span>
+                        <span class="card-sublabel">{{ recent_performance.shifts }} shift</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-card">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Distribusi Rating
+                    </h3>
+                    <div class="rating-chart">
+                        {% for rating, percentage in rating_distribution.items %}
+                        <div class="rating-bar-container">
+                            <div class="rating-label">
+                                <span>{{ rating }}</span>
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="rating-bar">
+                                <div class="rating-fill" style="width: {{ percentage }}%"></div>
+                            </div>
+                            <div class="rating-percentage">{{ percentage|floatformat:0 }}%</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <h3 class="chart-title">
+                        <i class="fas fa-chart-line"></i>
+                        Trend Bulanan
+                    </h3>
+                    <div class="monthly-chart">
+                        <canvas id="monthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance by Faskes -->
+        {% if faskes_performance %}
+        <div class="faskes-section">
+            <h2 class="section-title">
+                <i class="fas fa-hospital"></i>
+                Performa per Faskes
+            </h2>
+            
+            <div class="faskes-grid">
+                {% for faskes_name, data in faskes_performance.items %}
+                <div class="faskes-card">
+                    <div class="faskes-header">
+                        <h4 class="faskes-name">{{ faskes_name }}</h4>
+                        <div class="faskes-rating">
+                            <span class="rating-value">{{ data.avg_rating|floatformat:1 }}</span>
+                            <div class="rating-stars-small">
+                                {% for star in "12345" %}
+                                    {% if forloop.counter <= data.avg_rating %}
+                                        <i class="fas fa-star star-filled"></i>
+                                    {% else %}
+                                        <i class="fas fa-star star-empty"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="faskes-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>{{ data.total_shifts }} shift</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Rp {{ data.earnings|floatformat:0 }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Recent Feedback -->
+        {% if skills_feedback %}
+        <div class="feedback-section">
+            <h2 class="section-title">
+                <i class="fas fa-comments"></i>
+                Feedback Terbaru
+            </h2>
+            
+            <div class="feedback-list">
+                {% for feedback in skills_feedback %}
+                <div class="feedback-item">
+                    <div class="feedback-header">
+                        <div class="feedback-source">
+                            <strong>{{ feedback.faskes }}</strong>
+                            <span class="departemen">{{ feedback.departemen }}</span>
+                        </div>
+                        <div class="feedback-date">
+                            {{ feedback.tanggal|date:"d M Y" }}
+                        </div>
+                    </div>
+                    <div class="feedback-rating">
+                        {% for star in "12345" %}
+                            {% if forloop.counter <= feedback.rating %}
+                                <i class="fas fa-star star-filled"></i>
+                            {% else %}
+                                <i class="fas fa-star star-empty"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="feedback-comment">
+                        <i class="fas fa-quote-left"></i>
+                        {{ feedback.komentar }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="action-section">
+            <div class="action-buttons">
+                <a href="{% url 'management:histori_kinerja' %}" class="action-btn secondary">
+                    <i class="fas fa-history"></i>
+                    Lihat Detail Histori
+                </a>
+                <a href="{% url 'management:cari_tugas' %}" class="action-btn primary">
+                    <i class="fas fa-plus"></i>
+                    Ambil Tugas Baru
+                </a>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3 class="empty-title">Belum Ada Data Evaluasi</h3>
+            <p class="empty-subtitle">
+                Anda perlu menyelesaikan beberapa shift dan menerima review untuk melihat evaluasi kinerja.
+            </p>
+            <div class="empty-actions">
+                <a href="{% url 'management:cari_tugas' %}" class="empty-action primary">
+                    <i class="fas fa-search"></i>
+                    Cari Tugas
+                </a>
+                <a href="{% url 'management:nakes_profile' %}" class="empty-action secondary">
+                    <i class="fas fa-user"></i>
+                    Lengkapi Profile
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if has_data %}
+    // Initialize monthly performance chart
+    initializeMonthlyChart();
+    
+    // Initialize card animations
+    initializeCardAnimations();
+    
+    // Initialize rating animations
+    initializeRatingAnimations();
+    {% endif %}
+});
+
+{% if has_data %}
+function initializeMonthlyChart() {
+    const ctx = document.getElementById('monthlyChart');
+    if (!ctx) return;
+    
+    const monthlyData = {{ monthly_performance|safe }};
+    
+    if (monthlyData.length === 0) {
+        ctx.parentElement.innerHTML = '<div class="no-chart-data"><i class="fas fa-info-circle"></i>Belum ada data untuk ditampilkan</div>';
+        return;
+    }
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: monthlyData.map(item => item.month),
+            datasets: [
+                {
+                    label: 'Rating',
+                    data: monthlyData.map(item => item.avg_rating),
+                    borderColor: '#4facfe',
+                    backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Jumlah Shift',
+                    data: monthlyData.map(item => item.shifts),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    min: 0,
+                    max: 5,
+                    title: {
+                        display: true,
+                        text: 'Rating'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Jumlah Shift'
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+}
+
+function initializeCardAnimations() {
+    const cards = document.querySelectorAll('.overview-card, .faskes-card, .feedback-item');
+    
+    // Intersection Observer for scroll animations
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    });
+    
+    cards.forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+    });
+}
+
+function initializeRatingAnimations() {
+    // Animate rating bars
+    const ratingBars = document.querySelectorAll('.rating-fill');
+    setTimeout(() => {
+        ratingBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            bar.style.transition = 'width 1.5s ease-out';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 100);
+        });
+    }, 500);
+    
+    // Animate numbers in cards
+    const numberElements = document.querySelectorAll('.card-number');
+    numberElements.forEach(element => {
+        const finalValue = element.textContent;
+        const isNumber = !isNaN(parseFloat(finalValue.replace(/[^\d.]/g, '')));
+        
+        if (isNumber && !finalValue.includes('Rp')) {
+            const numValue = parseFloat(finalValue.replace(/[^\d.]/g, ''));
+            animateNumber(element, 0, numValue, 2000);
+        }
+    });
+}
+
+function animateNumber(element, start, end, duration) {
+    const startTime = performance.now();
+    
+    function updateNumber(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        const current = start + (end - start) * easeOutCubic;
+        
+        if (end % 1 === 0) {
+            element.textContent = Math.floor(current).toString();
+        } else {
+            element.textContent = current.toFixed(1);
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateNumber);
+        }
+    }
+    
+    requestAnimationFrame(updateNumber);
+}
+{% endif %}
+
+// Export functions for potential future use
+window.evaluasiUtils = {
+    {% if has_data %}
+    initializeMonthlyChart,
+    initializeCardAnimations,
+    initializeRatingAnimations
+    {% endif %}
+};
+</script>
+{% endblock %}
