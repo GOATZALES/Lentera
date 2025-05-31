@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'authentication',
     'django.contrib.humanize',
     'ai_service',
+    'planning',
 ]
 
 MIDDLEWARE = [
