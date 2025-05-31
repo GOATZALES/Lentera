@@ -15,8 +15,9 @@
             border: 1px solid #e2e8f0;
         }
         .planning-card h2, .planning-card h3 {
-            color: #1e293b; font-weight: 700; margin-bottom: 1rem;
-            padding-bottom: 0.5rem; border-bottom: 2px solid #f1f5f9;
+            color: var(--lentera-blue-primary); /* Judul Biru */
+            font-weight: 700; margin-bottom: 1rem;
+            padding-bottom: 0.5rem; border-bottom: 2px solid #eef2f7; /* Border biru muda */
         }
         .planning-card h2 { font-size: 1.75rem; }
         .planning-card h3 { font-size: 1.25rem; }
@@ -29,26 +30,41 @@
             transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
         }
         .form-control:focus, .form-select:focus {
-            border-color: #4A90E2; outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(74,144,226,.25);
+            border-color: var(--lentera-blue-primary); outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(79,169,254,.25); /* Shadow fokus biru */
         }
         .btn-calculate-budget {
-            background-color: #4A90E2; color: white;
+            background: var(--secondary-gradient); /* Tombol Hitung Hijau */
+            color: white;
             padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600;
         }
-        .btn-calculate-budget:hover { background-color: #357ABD; }
+        .btn-calculate-budget:hover { opacity:0.9; }
 
         .budget-summary-card { margin-top: 30px; }
         .summary-item { margin-bottom: 15px; }
         .summary-item strong { color: #343a40; display: block; font-size: 0.9rem; margin-bottom: 2px; }
-        .summary-item span { font-size: 1.2rem; color: #4A90E2; font-weight: bold; }
+        .summary-item span { font-size: 1.2rem; color: var(--lentera-blue-primary); font-weight: bold; } /* Nilai summary biru */
         .summary-item span.cost { font-size: 1.5rem; }
+        .summary-item span.cost.text-success { color: var(--lentera-green-primary) !important; } /* Biaya min hijau */
+        .summary-item span.cost.text-danger { color: #E53E3E !important; } /* Biaya max merah (tetap) */
 
-        .monthly-breakdown-table th { background-color: #e9ecef; }
+
+        .monthly-breakdown-table th { background-color: #eef2f7; color: #2c5282; } /* Header tabel biru muda */
         .profile-header { text-align: center; margin-bottom: 30px;}
-        .profile-header .profile-name { font-size: 28px; font-weight: 700; color: #1e293b;}
+        .profile-header .profile-name { font-size: 28px; font-weight: 700; color: var(--lentera-blue-primary);}
         .profile-header .profile-profession { font-size: 16px; color: #64748b;}
+        
         .alert-planning.warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; padding:1rem; margin-bottom:1rem; border-radius:8px;}
+        .alert-planning.warning i { color: #d97706; }
+
+        .btn-detail-log {
+            background-color: var(--lentera-blue-primary);
+            color: white;
+        }
+        .btn-detail-log:hover {
+            background-color: #3a99e8; /* Biru lebih gelap */
+            color: white;
+        }
     </style>
 {% endblock %}
 
@@ -60,7 +76,7 @@
     </div>
 
     <div class="planning-card">
-        <h2><i class="fas fa-calendar-alt me-2" style="color: #4A90E2;"></i>Buat Rencana Budget</h2>
+        <h2><i class="fas fa-calendar-alt me-2"></i>Buat Rencana Budget</h2>
         <p class="text-muted mb-3">Sistem akan secara otomatis menghasilkan forecast kebutuhan SDM bulanan berdasarkan data historis dan profil faskes Anda untuk membuat estimasi budget.</p>
         <form method="POST" class="mb-4">
             {% csrf_token %}
@@ -97,10 +113,10 @@
 
     {% if budget_summary %}
     <div class="planning-card budget-summary-card">
-        <h2><i class="fas fa-receipt me-2" style="color: #10b981;"></i>Ringkasan Estimasi Budget</h2>
+        <h2><i class="fas fa-receipt me-2" style="color: var(--lentera-green-primary);"></i>Ringkasan Estimasi Budget</h2>
         {% if not budget_summary.all_sub_forecasts_successful %}
             <div class="alert alert-warning alert-planning warning">
-                <strong>Peringatan:</strong> Tidak semua forecast bulanan berhasil dibuat. Estimasi budget yang ditampilkan mungkin tidak lengkap atau kurang akurat. Silakan periksa log atau coba lagi.
+                <strong><i class="fas fa-exclamation-triangle me-1"></i> Peringatan:</strong> Tidak semua forecast bulanan berhasil dibuat. Estimasi budget yang ditampilkan mungkin tidak lengkap atau kurang akurat. Silakan periksa log atau coba lagi.
             </div>
         {% endif %}
 
@@ -133,14 +149,14 @@
         {% if budget_summary.user_notes %}
         <div class="mt-3 summary-item">
             <strong>Catatan Pengguna:</strong>
-            <p class="text-muted">{{ budget_summary.user_notes|linebreaksbr }}</p>
+            <p class="text-muted p-2 bg-light border rounded">{{ budget_summary.user_notes|linebreaksbr }}</p>
         </div>
         {% endif %}
         
         <h3 class="mt-4">Rincian Estimasi per Bulan:</h3>
         <div class="table-responsive">
-            <table class="table table-sm table-bordered">
-                <thead class="table-light">
+            <table class="table table-sm table-bordered table-hover">
+                <thead>
                     <tr>
                         <th>Bulan</th>
                         <th>Est. Biaya Min (Rp)</th>
@@ -158,8 +174,8 @@
                             <td colspan="4" class="text-danger fst-italic">Error: {{ item.error }}</td>
                             <td>N/A</td>
                         {% else %}
-                            <td>{{ item.estimated_min_cost|intcomma }}</td>
-                            <td>{{ item.estimated_max_cost|intcomma }}</td>
+                            <td class="text-success">{{ item.estimated_min_cost|intcomma }}</td>
+                            <td class="text-danger">{{ item.estimated_max_cost|intcomma }}</td>
                             <td>
                                 <ul class="list-unstyled mb-0 small">
                                 {% for role, count in item.predicted_staffing.items %}
@@ -174,7 +190,7 @@
                             <td class="small">{{ item.alerts_recommendations|truncatewords:15 }}</td>
                             <td>
                                 {% if item.log_id %}
-                                <a href="{% url 'planning:forecast_detail' item.log_id %}" class="btn btn-outline-secondary btn-sm" title="Lihat Detail Forecast AI">
+                                <a href="{% url 'planning:forecast_detail' item.log_id %}" class="btn btn-sm btn-detail-log" title="Lihat Detail Forecast AI">
                                     <i class="fas fa-search-plus"></i> {{ item.log_id }}
                                 </a>
                                 {% else %}N/A{% endif %}

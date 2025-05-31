@@ -1,25 +1,24 @@
 {% extends 'base.html' %}
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}{{ page_title }} - Lentera Admin{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-xl">
+<div class="max-w-2xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-xl mt-6">
     <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 border-b pb-4">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-blue-700">{{ page_title }}</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-theme-blue-primary">{{ page_title }}</h1>
             <p class="text-xs sm:text-sm text-gray-500">ID Permintaan: {{ fund_request.id|truncatechars:15 }}</p>
         </div>
-        <a href="{% url 'emergency:list_fund_requests' %}" class="mt-2 sm:mt-0 text-sm text-indigo-600 hover:underline">« Kembali ke Daftar Permintaan</a>
+        <a href="{% url 'emergency:list_fund_requests' %}" class="mt-2 sm:mt-0 text-sm text-theme-blue-primary hover:underline">« Kembali ke Daftar Permintaan</a>
     </div>
     
     {% include "_messages.html" %}
 
-    <!-- Detail Permintaan -->
     <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
         <h3 class="text-lg font-semibold text-gray-800 mb-3">Detail Permintaan Dana</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <p><strong>Faskes:</strong> <span class="font-medium text-gray-700">{{ fund_request.faskes.nama_faskes }}</span></p>
             <p><strong>Kejadian:</strong> <span class="font-medium text-gray-700">{{ fund_request.emergency_event.disaster_type }}</span></p>
-            <p><strong>Jumlah Diajukan:</strong> <span class="font-bold text-blue-600">{{ fund_request.get_requested_amount_display }}</span></p>
+            <p><strong>Jumlah Diajukan:</strong> <span class="font-bold text-theme-blue-primary">{{ fund_request.get_requested_amount_display }}</span></p>
             <p><strong>Tanggal Pengajuan:</strong> <span class="text-gray-700">{{ fund_request.request_date|date:"l, d F Y H:i" }}</span></p>
             <div class="sm:col-span-2">
                 <p><strong>Tujuan Penggunaan:</strong></p>
@@ -28,9 +27,9 @@
             <p><strong>Status Saat Ini:</strong> 
                 <span class="px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full 
                     {% if fund_request.status == 'PENDING' %}bg-yellow-100 text-yellow-800
-                    {% elif fund_request.status == 'APPROVED' %}bg-green-100 text-green-800
+                    {% elif fund_request.status == 'APPROVED' %}bg-theme-green-primary/10 text-theme-green-primary
                     {% elif fund_request.status == 'REJECTED' %}bg-red-100 text-red-800
-                    {% elif fund_request.status == 'DISBURSED' %}bg-blue-100 text-blue-800
+                    {% elif fund_request.status == 'DISBURSED' %}bg-theme-blue-primary/10 text-theme-blue-primary
                     {% elif fund_request.status == 'REPORTED' %}bg-purple-100 text-purple-800
                     {% else %}bg-gray-100 text-gray-700{% endif %}">
                     {{ fund_request.get_status_display }}
@@ -49,7 +48,6 @@
         </div>
     </div>
 
-    <!-- Form Persetujuan/Penolakan (jika status PENDING) -->
     {% if fund_request.status == 'PENDING' or fund_request.status == 'APPROVED' or fund_request.status == 'DISBURSED' %}
     <form method="post" class="mb-8 p-4 border border-yellow-300 bg-yellow-50 rounded-lg" enctype="multipart/form-data">
         {% csrf_token %}
@@ -58,41 +56,41 @@
             {% for field in approval_form %}
             <div>
                 <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}</label>
-                {{ field }}
+                {{ field }} {# Gunakan _form_styling.html #}
                 {% for error in field.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
             </div>
             {% endfor %}
         </div>
         <div class="flex justify-end mt-4">
             <button type="submit" name="submit_approval" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600">
-                Simpan Perubahan Status
+                <i class="fas fa-check-double mr-1"></i> Simpan Perubahan Status
             </button>
         </div>
     </form>
     {% endif %}
     
-    <!-- Form Upload Bukti Pencairan (jika status APPROVED) -->
     {% if fund_request.status == 'APPROVED' %}
-    <form method="post" class="mb-8 p-4 border border-green-300 bg-green-50 rounded-lg" enctype="multipart/form-data">
+    <form method="post" class="mb-8 p-4 border border-theme-green-primary/30 bg-theme-green-primary/5 rounded-lg" enctype="multipart/form-data">
         {% csrf_token %}
-        <h3 class="text-lg font-semibold text-green-800 mb-3">Pencairan Dana</h3>
+        <h3 class="text-lg font-semibold text-theme-green-primary mb-3">Pencairan Dana</h3>
          {% if fund_request.disbursement_proof %}
             <p class="text-sm text-gray-700 mb-2">Bukti pencairan sudah diunggah: 
-                <a href="{{ fund_request.disbursement_proof.url }}" target="_blank" class="text-indigo-600 hover:underline">{{ fund_request.disbursement_proof.name|truncatechars:30 }}</a>
+                <a href="{{ fund_request.disbursement_proof.url }}" target="_blank" class="text-theme-blue-primary hover:underline">{{ fund_request.disbursement_proof.name|truncatechars:30 }}</a>
             </p>
         {% endif %}
         <div class="space-y-4">
-            {{ disbursement_form.as_p }} {# Cara render form cepat, bisa di-loop seperti di atas jika perlu custom styling per field #}
+            {{ disbursement_form.disbursement_proof.label_tag }}
+            {{ disbursement_form.disbursement_proof }} {# Gunakan _form_styling.html untuk class .form-input-file #}
+            {% for error in disbursement_form.disbursement_proof.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
         </div>
         <div class="flex justify-end mt-4">
-            <button type="submit" name="submit_disbursement" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
-                Unggah Bukti & Tandai Dicairkan
+            <button type="submit" name="submit_disbursement" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-theme-green-primary to-theme-green-secondary hover:opacity-90">
+                <i class="fas fa-file-upload mr-1"></i> Unggah Bukti & Tandai Dicairkan
             </button>
         </div>
     </form>
     {% endif %}
 
-    <!-- Form Upload Laporan (jika status DISBURSED) -->
     {% if fund_request.status == 'DISBURSED' %}
     <form method="post" class="mb-8 p-4 border border-purple-300 bg-purple-50 rounded-lg" enctype="multipart/form-data">
         {% csrf_token %}
@@ -100,15 +98,17 @@
         <p class="text-sm text-gray-600 mb-2">Faskes wajib mengunggah laporan penggunaan dana setelah dana dicairkan dan digunakan.</p>
         {% if fund_request.spending_report_file %}
             <p class="text-sm text-gray-700 mb-2">Laporan sudah diunggah: 
-                <a href="{{ fund_request.spending_report_file.url }}" target="_blank" class="text-indigo-600 hover:underline">{{ fund_request.spending_report_file.name|truncatechars:30 }}</a>
+                <a href="{{ fund_request.spending_report_file.url }}" target="_blank" class="text-theme-blue-primary hover:underline">{{ fund_request.spending_report_file.name|truncatechars:30 }}</a>
             </p>
         {% endif %}
         <div class="space-y-4">
-            {{ report_form.as_p }}
+            {{ report_form.spending_report_file.label_tag }}
+            {{ report_form.spending_report_file }} {# Gunakan _form_styling.html untuk class .form-input-file #}
+            {% for error in report_form.spending_report_file.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
         </div>
         <div class="flex justify-end mt-4">
             <button type="submit" name="submit_report" class="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700">
-                Unggah Laporan & Tandai Dilaporkan
+                <i class="fas fa-file-invoice-dollar mr-1"></i> Unggah Laporan & Tandai Dilaporkan
             </button>
         </div>
     </form>
@@ -120,7 +120,7 @@
         {% if fund_request.spending_report_file %}
             <p class="text-sm text-gray-700">
                 File laporan: 
-                <a href="{{ fund_request.spending_report_file.url }}" target="_blank" class="text-indigo-600 hover:underline">{{ fund_request.spending_report_file.name|truncatechars:30 }}</a>
+                <a href="{{ fund_request.spending_report_file.url }}" target="_blank" class="text-theme-blue-primary hover:underline">{{ fund_request.spending_report_file.name|truncatechars:30 }}</a>
                 (Diunggah pada: {{ fund_request.report_submission_date|date:"d M Y H:i" }})
             </p>
         {% else %}
@@ -131,9 +131,4 @@
 
 </div>
 {% include "_form_styling.html" %}
-<style>
-    .form-input-file { /* Styling dasar untuk input file */
-        @apply block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100;
-    }
-</style>
 {% endblock %}

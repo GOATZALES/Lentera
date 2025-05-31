@@ -1,22 +1,19 @@
 {% extends 'base.html' %}
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}{{ page_title }} - Lentera Admin{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-xl">
+<div class="max-w-6xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-xl mt-6">
     <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 border-b pb-4">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-purple-700">{{ page_title }}</h1>
-            <p class="text-sm text-gray-500">Kejadian: <strong class="text-purple-600">{{ event.disaster_type }}</strong> ({{ event.location_description }})</p>
+            <h1 class="text-2xl sm:text-3xl font-bold text-theme-blue-primary">{{ page_title }}</h1>
+            <p class="text-sm text-gray-500">Kejadian: <strong class="text-theme-blue-primary/80">{{ event.disaster_type }}</strong> ({{ event.location_description }})</p>
         </div>
         <div class="flex flex-col sm:flex-row sm:items-center mt-2 sm:mt-0 space-y-2 sm:space-y-0 sm:space-x-3">
-            <a href="{% url 'emergency:resource_tracking_dashboard' event_id=event.id %}" class="text-sm text-teal-600 hover:text-teal-800 bg-teal-50 px-3 py-1.5 rounded-md font-medium ring-1 ring-teal-200 hover:ring-teal-300">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+            <a href="{% url 'emergency:resource_tracking_dashboard' event_id=event.id %}" class="text-sm text-theme-green-primary hover:text-theme-green-primary-hover bg-theme-green-primary/10 px-3 py-1.5 rounded-md font-medium ring-1 ring-theme-green-primary/20 hover:ring-theme-green-primary/30">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 Lacak Semua Sumber Daya
             </a>
-            <a href="{% url 'emergency:activate_emergency' %}" class="text-sm text-indigo-600 hover:underline">« Kembali ke Aktivasi Darurat</a>
+            <a href="{% url 'emergency:activate_emergency' %}" class="text-sm text-theme-blue-primary hover:underline">« Kembali ke Aktivasi Darurat</a>
         </div>    
     </div>
 
@@ -34,11 +31,11 @@
                 </select>
             </div>
             <div class="sm:col-span-1">
-                <button type="submit" class="w-full sm:w-auto py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                    Filter
+                <button type="submit" class="w-full sm:w-auto py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-theme-blue-primary hover:bg-theme-blue-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme-blue-primary">
+                    <i class="fas fa-filter mr-1"></i> Filter
                 </button>
                 {% if current_status_filter %}
-                <a href="{% url 'emergency:admin_event_volunteer_dashboard' event.id %}" class="ml-2 text-sm text-purple-600 hover:underline">Reset Filter</a>
+                <a href="{% url 'emergency:admin_event_volunteer_dashboard' event.id %}" class="ml-2 text-sm text-theme-blue-primary hover:underline">Reset Filter</a>
                 {% endif %}
             </div>
         </div>
@@ -47,7 +44,7 @@
     {% if applications %}
         <div class="overflow-x-auto shadow border-b border-gray-200 sm:rounded-lg">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-100">
                     <tr>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Relawan</th>
                         <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tgl Daftar</th>
@@ -68,28 +65,28 @@
                         <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{{ app.application_date|date:"d M Y, H:i" }}</td>
                         <td class="px-4 py-4 whitespace-normal text-sm text-gray-700 max-w-xs">
                             {% for category in app.task_categories_preference.all %}
-                                <span class="inline-block bg-gray-100 text-gray-700 text-xs font-medium mr-1 mb-1 px-1.5 py-0.5 rounded">{{ category.name }}</span>
+                                <span class="inline-block bg-theme-blue-primary/10 text-theme-blue-primary text-xs font-medium mr-1 mb-1 px-1.5 py-0.5 rounded">{{ category.name }}</span>
                             {% empty %}
                                 <span class="text-xs text-gray-400 italic">- Tidak ada preferensi -</span>
                             {% endfor %}
                         </td>
                         <td class="px-4 py-4 whitespace-nowrap text-xs">
                             {% if app.volunteer_profile.is_profile_verified_by_admin %}
-                                <span class="px-1.5 py-0.5 inline-flex leading-4 font-semibold rounded-full bg-green-100 text-green-800">Profil Terverifikasi</span>
+                                <span class="px-1.5 py-0.5 inline-flex leading-4 font-semibold rounded-full bg-theme-green-primary/10 text-theme-green-primary">Profil Terverifikasi</span>
                             {% else %}
                                 <span class="px-1.5 py-0.5 inline-flex leading-4 font-semibold rounded-full bg-yellow-100 text-yellow-800">Profil Belum Terverifikasi</span>
                             {% endif %}
                             <br>
-                            <span class="mt-1 inline-block px-1.5 py-0.5 leading-4 font-semibold rounded-full {% if app.volunteer_profile.has_completed_basic_training %}bg-blue-100 text-blue-800{% else %}bg-orange-100 text-orange-800{% endif %}">
+                            <span class="mt-1 inline-block px-1.5 py-0.5 leading-4 font-semibold rounded-full {% if app.volunteer_profile.has_completed_basic_training %}bg-theme-blue-primary/10 text-theme-blue-primary{% else %}bg-orange-100 text-orange-800{% endif %}">
                                 Training: {% if app.volunteer_profile.has_completed_basic_training %}Selesai{% else %}Belum{% endif %}
                             </span>
                         </td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm">
                             <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                                 {% if app.status == 'PENDING' %}bg-yellow-100 text-yellow-800
-                                {% elif app.status == 'APPROVED' %}bg-green-100 text-green-800
+                                {% elif app.status == 'APPROVED' %}bg-theme-green-primary/10 text-theme-green-primary
                                 {% elif app.status == 'REJECTED' %}bg-red-100 text-red-800
-                                {% elif app.status == 'DEPLOYED' %}bg-blue-100 text-blue-800
+                                {% elif app.status == 'DEPLOYED' %}bg-theme-blue-primary/10 text-theme-blue-primary
                                 {% elif app.status == 'COMPLETED' %}bg-gray-200 text-gray-800
                                 {% elif app.status == 'CANCELLED' %}bg-gray-200 text-gray-800
                                 {% else %}bg-gray-100 text-gray-700{% endif %}">
@@ -97,7 +94,7 @@
                             </span>
                         </td>
                         <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                            <a href="{% url 'emergency:admin_manage_volunteer_application' app.id %}" class="text-purple-600 hover:text-purple-900 hover:underline">
+                            <a href="{% url 'emergency:admin_manage_volunteer_application' app.id %}" class="text-theme-blue-primary hover:text-theme-blue-primary-hover hover:underline">
                                 Kelola »
                             </a>
                         </td>
