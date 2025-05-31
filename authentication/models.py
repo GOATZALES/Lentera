@@ -1,5 +1,6 @@
 import uuid
 from django.db import models
+from django.contrib.auth.models import User
 
 class Faskes(models.Model):
     faskes_id_internal = models.CharField(max_length=50, unique=True, primary_key=True, help_text="ID unik internal Faskes Partner")
@@ -50,7 +51,8 @@ class Faskes(models.Model):
     
 
 class Departemen(models.Model):
-    departemen_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+
     faskes = models.ForeignKey(Faskes, on_delete=models.CASCADE, related_name='departemen')
     nama_departemen = models.CharField(max_length=255)
     jam_buka = models.TimeField(blank=True, null=True)
