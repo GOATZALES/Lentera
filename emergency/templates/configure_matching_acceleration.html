@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-xl">
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-indigo-700">{{ page_title }}</h1>
+            <p class="text-sm text-gray-500">{{ event.location_description }} | Level {{ event.get_severity_level_display }}</p>
+        </div>
+        <a href="{% url 'emergency:list_events_for_acceleration' %}" class="text-sm text-blue-600 hover:underline">« Kembali ke Daftar</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="p-4 mb-4 text-sm rounded-lg
+                {% if message.tags == 'success' %} bg-green-100 text-green-700 {% endif %}
+                {% if message.tags == 'error' %} bg-red-100 text-red-700 {% endif %}"
+                role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 3.001-1.742 3.001H4.42c-1.53 0-2.493-1.667-1.743-3.001l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-yellow-700">
+                    Mengaktifkan akselerasi akan memicu:
+                    <ul class="list-disc list-inside text-sm">
+                        <li>Permintaan dari zona bencana ini akan masuk ke <strong>antrian prioritas</strong>.</li>
+                        <li>Radius pencocokan SDM akan <strong>diperluas</strong> sesuai input di bawah.</li>
+                        <li><strong>Tarif kompensasi darurat</strong> akan diterapkan untuk SDM yang merespons.</li>
+                        <li>Target waktu respons pencocokan: <strong>2-4 jam</strong>.</li>
+                    </ul>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="flex items-start">
+                <div class="flex items-center h-5">
+                    {{ form.matching_acceleration_enabled }}
+                </div>
+                <div class="ml-3 text-sm">
+                    <label for="{{ form.matching_acceleration_enabled.id_for_label }}" class="font-medium text-gray-700">{{ form.matching_acceleration_enabled.label }}</label>
+                    {% if form.matching_acceleration_enabled.help_text %}
+                        <p class="text-xs text-gray-500">{{ form.matching_acceleration_enabled.help_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if form.matching_acceleration_enabled.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ form.matching_acceleration_enabled.errors|first }}</p>
+            {% endif %}
+        </div>
+        
+        <div id="radius_field_wrapper" class="{% if not form.instance.matching_acceleration_enabled %}hidden{% endif %}">
+            <label for="{{ form.expanded_matching_radius_km.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.expanded_matching_radius_km.label }}</label>
+            {{ form.expanded_matching_radius_km }}
+            {% if form.expanded_matching_radius_km.help_text %}
+                <p class="text-xs text-gray-500 mt-1">{{ form.expanded_matching_radius_km.help_text }}</p>
+            {% endif %}
+            {% if form.expanded_matching_radius_km.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ form.expanded_matching_radius_km.errors|first }}</p>
+            {% endif %}
+        </div>
+
+        <div class="flex justify-end pt-4 border-t">
+            <a href="{% url 'emergency:list_events_for_acceleration' %}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mr-3">
+                Batal
+            </a>
+            <button type="submit" class="py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Simpan Pengaturan
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    const accelerationCheckbox = document.getElementById("{{ form.matching_acceleration_enabled.id_for_label }}");
+    const radiusWrapper = document.getElementById("radius_field_wrapper");
+    const radiusInput = document.getElementById("{{ form.expanded_matching_radius_km.id_for_label }}");
+
+    function toggleRadiusField() {
+        if (accelerationCheckbox.checked) {
+            radiusWrapper.classList.remove('hidden');
+            if (!radiusInput.value) { // Set default jika kosong dan checkbox dicentang
+                radiusInput.value = "{{ form.DEFAULT_EMERGENCY_RADIUS }}";
+            }
+        } else {
+            radiusWrapper.classList.add('hidden');
+            // radiusInput.value = ''; // Opsional: kosongkan field radius jika tidak aktif
+        }
+    }
+
+    accelerationCheckbox.addEventListener('change', toggleRadiusField);
+    // Panggil saat load untuk memastikan state awal benar
+    // toggleRadiusField(); // Tidak perlu jika sudah di-handle oleh Django template logic {% if ... %}hidden{% endif %}
+</script>
+{% endblock %}

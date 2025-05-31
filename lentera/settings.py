@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'authentication',
     'django.contrib.humanize',
     'ai_service',
+    "management",
+    'emergency',
 ]
 
 MIDDLEWARE = [
@@ -62,7 +64,7 @@ ROOT_URLCONF = 'lentera.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates',BASE_DIR / 'management'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -125,7 +127,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 if DEBUG:
     STATICFILES_DIRS = [
-        BASE_DIR / 'static'
+        BASE_DIR / 'static',
+        BASE_DIR /  'management/static'
     ]
 else:
     STATIC_ROOT = BASE_DIR / 'static'
