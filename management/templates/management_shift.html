@@ -1,146 +1,418 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola Shift</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
-        }
-        /* Custom styles for better visual appeal */
-        .card {
-            background-color: #ffffff;
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
-        }
-        .filter-button {
-            @apply px-4 py-2 rounded-md transition-colors duration-200;
-        }
-        .filter-button.active {
-            @apply bg-blue-600 text-white shadow-md;
-        }
-        .filter-button:not(.active) {
-            @apply bg-gray-200 text-gray-700 hover:bg-gray-300;
-        }
-        .table-header {
-            @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
-        }
-        .table-cell {
-            @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
-        }
-        .table-action-button {
-            @apply px-3 py-1 text-xs font-medium rounded-md transition-colors duration-200;
-        }
-    </style>
-</head>
-<body class="p-4 sm:p-6 lg:p-8">
-    <div class="max-w-7xl mx-auto">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">Kelola Shift</h1>
-            <p class="text-lg text-gray-600">Departemen: <span class="font-semibold">{{ departemen.nama_departemen|default:'Nama Departemen' }}</span></p>
-        </header>
+{% extends 'templates/management_base_faskes.html' %}
 
-        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="card p-6 text-center">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Total Shift</h2>
-                <p class="text-4xl font-bold text-blue-600">{{ shift_summary.total|default:'0' }}</p>
-            </div>
-            <div class="card p-6 text-center">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Shift Aktif</h2>
-                <p class="text-4xl font-bold text-green-600">{{ shift_summary.active|default:'0' }}</p>
-            </div>
-            <div class="card p-6 text-center">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Shift Selesai</h2>
-                <p class="text-4xl font-bold text-purple-600">{{ shift_summary.completed|default:'0' }}</p>
-            </div>
-            <div class="card p-6 text-center">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Shift Belum Terisi</h2>
-                <p class="text-4xl font-bold text-red-600">{{ shift_summary.unfilled|default:'0' }}</p>
-            </div>
-        </section>
+{% load static %}
 
-        <section class="card p-6 mb-8 flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4">
-            <div class="flex flex-wrap gap-2">
-                <a href="?date=today&status={{ current_filters.status }}" class="filter-button {% if current_filters.date == 'today' %}active{% endif %}">Hari Ini</a>
-                <a href="?date=upcoming&status={{ current_filters.status }}" class="filter-button {% if current_filters.date == 'upcoming' %}active{% endif %}">Mendatang</a>
-                <a href="?date=past&status={{ current_filters.status }}" class="filter-button {% if current_filters.date == 'past' %}active{% endif %}">Lalu</a>
+{% block title %}Kelola Lamaran - {{ departemen.nama_departemen }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/kelola_lamaran.css' %}"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+{% endblock %}
+
+    
+
+{% block content %}
+    <div class="main-container">
+        
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="header-info">
+                    <h1>Kelola Penugasan</h1>
+                    <p>
+                        <i class="fas fa-hospital"></i>
+                        {{ departemen.nama_departemen }} - {{ departemen.faskes.nama_faskes }}
+                    </p>
+                </div>
             </div>
 
-            <div class="flex flex-wrap gap-2">
-                <a href="?date={{ current_filters.date }}&status=all" class="filter-button {% if current_filters.status == 'all' %}active{% endif %}">Semua Status</a>
-                <a href="?date={{ current_filters.date }}&status=active" class="filter-button {% if current_filters.status == 'active' %}active{% endif %}">Aktif</a>
-                <a href="?date={{ current_filters.date }}&status=inactive" class="filter-button {% if current_filters.status == 'inactive' %}active{% endif %}">Tidak Aktif</a>
+            <!-- Statistics -->
+            <div class="stats-row">
+                <div class="stat-card total">
+                    <div class="stat-value">{{ assignment_stats.total }}</div>
+                    <div class="stat-label">Total Penugasan</div>
+                </div>
+                <div class="stat-card pending">
+                    <div class="stat-value">{{ assignment_stats.pending }}</div>
+                    <div class="stat-label">Menunggu Konfirmasi</div>
+                </div>
+                <div class="stat-card approved">
+                    <div class="stat-value">{{ assignment_stats.accepted }}</div>
+                    <div class="stat-label">Diterima</div>
+                </div>
+                <div class="stat-card rejected">
+                    <div class="stat-value">{{ assignment_stats.completed }}</div>
+                    <div class="stat-label">Selesai</div>
+                </div>
+            </div>">
+                    <div class="stat-value">{{ application_stats.pending }}</div>
+                    <div class="stat-label">Menunggu Review</div>
+                </div>
+                <div class="stat-card approved">
+                    <div class="stat-value">{{ application_stats.approved }}</div>
+                    <div class="stat-label">Disetujui</div>
+                </div>
+                <div class="stat-card rejected">
+                    <div class="stat-value">{{ application_stats.rejected }}</div>
+                    <div class="stat-label">Ditolak</div>
+                </div>
             </div>
 
-            <form method="POST" action="" class="w-full sm:w-auto">
-                <button type="submit" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
-                    Buat Shift Baru
-                </button>
-            </form>
-        </section>
+            <!-- Filters -->
+            <div class="filters-section">
+                <h2 class="filters-title">
+                    <i class="fas fa-filter"></i>
+                    Filter Lamaran
+                </h2>
+                <form method="get" id="filterForm">
+                    <div class="filters-grid">
+                        <div class="filter-group">
+                            <label class="filter-label">Status</label>
+                            <select name="status" class="filter-select">
+                                <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>Semua Status</option>
+                                <option value="PENDING" {% if current_filters.status == 'PENDING' %}selected{% endif %}>Menunggu Review</option>
+                                <option value="APPROVED" {% if current_filters.status == 'APPROVED' %}selected{% endif %}>Disetujui</option>
+                                <option value="REJECTED" {% if current_filters.status == 'REJECTED' %}selected{% endif %}>Ditolak</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Shift</label>
+                            <select name="shift" class="filter-select">
+                                <option value="all">Semua Shift</option>
+                                {% for shift in available_shifts %}
+                                <option value="{{ shift.id }}" {% if current_filters.shift == shift.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ shift.nama_shift }} - {{ shift.tanggal }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">Periode</label>
+                            <select name="date" class="filter-select">
+                                <option value="all" {% if current_filters.date == 'all' %}selected{% endif %}>Semua Waktu</option>
+                                <option value="today" {% if current_filters.date == 'today' %}selected{% endif %}>Hari Ini</option>
+                                <option value="week" {% if current_filters.date == 'week' %}selected{% endif %}>7 Hari Terakhir</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i>
+                            Terapkan Filter
+                        </button>
+                        <a href="{% url 'management:kelola_lamaran' %}" class="btn btn-secondary">
+                            <i class="fas fa-refresh"></i>
+                            Reset
+                        </a>
+                    </div>
+                </form>
+            </div>
 
-        <section class="card p-6 overflow-x-auto">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Daftar Shift</h2>
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="table-header">ID Shift</th>
-                        <th scope="col" class="table-header">Tanggal</th>
-                        <th scope="col" class="table-header">Waktu Mulai</th>
-                        <th scope="col" class="table-header">Waktu Selesai</th>
-                        <th scope="col" class="table-header">Staf Dibutuhkan</th>
-                        <th scope="col" class="table-header">Staf Terisi</th>
-                        <th scope="col" class="table-header">Status</th>
-                        <th scope="col" class="relative table-header">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {% if shifts %}
-                        {% for shift in shifts %}
+            <!-- Applications List -->
+            <div class="applications-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-list"></i>
+                        Daftar Lamaran
+                    </h2>
+                </div>
+
+                {% if applications %}
+                <!-- Desktop Table -->
+                <table class="applications-table">
+                    <thead>
                         <tr>
-                            <td class="table-cell font-medium text-blue-600">{{ shift.id|default:'N/A' }}</td>
-                            <td class="table-cell">{{ shift.tanggal_shift|date:"d M Y"|default:'N/A' }}</td>
-                            <td class="table-cell">{{ shift.jam_mulai|time:"H:i"|default:'N/A' }}</td>
-                            <td class="table-cell">{{ shift.jam_selesai|time:"H:i"|default:'N/A' }}</td>
-                            <td class="table-cell">{{ shift.jumlah_staf_dibutuhkan|default:'0' }}</td>
-                            <td class="table-cell">
-                                <span class="font-semibold">{{ shift.filled_count|default:'0' }}</span> / <span>{{ shift.assignment_count|default:'0' }}</span>
+                            <th>Nakes</th>
+                            <th>Shift</th>
+                            <th>Tanggal Shift</th>
+                            <th>Waktu Lamar</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for application in applications %}
+                        <tr>
+                            <td>
+                                <div>
+                                    <strong>{{ application.nakes.nama_lengkap }}</strong><br>
+                                    <small style="color: #64748b;">{{ application.nakes.profesi }} - {{ application.nakes.tahun_pengalaman }} tahun</small>
+                                </div>
                             </td>
-                            <td class="table-cell">
-                                {% if shift.is_active %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Aktif
-                                    </span>
-                                {% else %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        Tidak Aktif
-                                    </span>
-                                {% endif %}
-                                {% if shift.is_completed_by_faskes %}
-                                    <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                                        Selesai
-                                    </span>
-                                {% else %}
-                                    <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Menunggu
-                                    </span>
-                                {% endif %}
+                            <td>
+                                <div>
+                                    <strong>{{ application.shift.nama_shift }}</strong><br>
+                                    <small style="color: #64748b;">{{ application.shift.jam_mulai }} - {{ application.shift.jam_selesai }}</small>
+                                </div>
                             </td>
-                            
+                            <td>{{ application.shift.tanggal|date:"d M Y" }}</td>
+                            <td>{{ application.created_at|date:"d M Y H:i" }}</td>
+                            <td>
+                                <span class="status-badge {{ application.status|lower }}">
+                                    {{ application.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    {% if application.status == 'PENDING' %}
+                                    <button class="btn btn-success btn-sm" onclick="processApplication({{ application.id }}, 'approve')">
+                                        <i class="fas fa-check"></i>
+                                        Setujui
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" onclick="processApplication({{ application.id }}, 'reject')">
+                                        <i class="fas fa-times"></i>
+                                        Tolak
+                                    </button>
+                                    {% endif %}
+                                    <button class="btn btn-info btn-sm" onclick="viewDetails({{ application.id }})">
+                                        <i class="fas fa-eye"></i>
+                                        Detail
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="8" class="table-cell text-center text-gray-500 py-8">Tidak ada shift yang ditemukan.</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </section>
+                    </tbody>
+                </table>
+
+                <!-- Mobile Cards -->
+                {% for application in applications %}
+                <div class="application-card {{ application.status|lower }}">
+                    <div class="card-header">
+                        <div class="nakes-info">
+                            <h3>{{ application.nakes.nama_lengkap }}</h3>
+                            <p>{{ application.nakes.profesi }} - {{ application.nakes.tahun_pengalaman }} tahun pengalaman</p>
+                        </div>
+                        <span class="status-badge {{ application.status|lower }}">
+                            {{ application.get_status_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="card-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Shift</span>
+                            <span class="detail-value">{{ application.shift.nama_shift }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Tanggal</span>
+                            <span class="detail-value">{{ application.shift.tanggal|date:"d M Y" }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Waktu Shift</span>
+                            <span class="detail-value">{{ application.shift.jam_mulai }} - {{ application.shift.jam_selesai }}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Waktu Lamar</span>
+                            <span class="detail-value">{{ application.created_at|date:"d M Y H:i" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        {% if application.status == 'PENDING' %}
+                        <button class="btn btn-success btn-sm" onclick="processApplication({{ application.id }}, 'approve')">
+                            <i class="fas fa-check"></i>
+                            Setujui
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="processApplication({{ application.id }}, 'reject')">
+                            <i class="fas fa-times"></i>
+                            Tolak
+                        </button>
+                        {% endif %}
+                        <button class="btn btn-info btn-sm" onclick="viewDetails({{ application.id }})">
+                            <i class="fas fa-eye"></i>
+                            Detail
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% else %}
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-inbox"></i>
+                    </div>
+                    <h3 class="empty-title">Tidak Ada Lamaran</h3>
+                    <p class="empty-subtitle">Belum ada lamaran untuk departemen ini dengan filter yang dipilih.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
-</body>
-</html>
+
+    <!-- Modal untuk Process Application -->
+    <div class="modal" id="processModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle"></h3>
+            </div>
+            <div class="modal-body">
+                <form id="processForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="applicationId" name="application_id">
+                    <input type="hidden" id="actionType" name="action">
+                    
+                    <div class="form-group">
+                        <label class="form-label">Catatan (opsional)</label>
+                        <textarea class="form-textarea" name="notes" placeholder="Tambahkan catatan untuk nakes..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Batal</button>
+                <button type="button" class="btn btn-primary" id="confirmBtn" onclick="confirmProcess()">Konfirmasi</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-submit form when filter changes
+        document.querySelectorAll('.filter-select').forEach(select => {
+            select.addEventListener('change', function() {
+                document.getElementById('filterForm').submit();
+            });
+        });
+
+        // Process application functions
+        function processApplication(applicationId, action) {
+            const modal = document.getElementById('processModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const confirmBtn = document.getElementById('confirmBtn');
+            
+            document.getElementById('applicationId').value = applicationId;
+            document.getElementById('actionType').value = action;
+            
+            if (action === 'approve') {
+                modalTitle.textContent = 'Setujui Lamaran';
+                confirmBtn.textContent = 'Setujui';
+                confirmBtn.className = 'btn btn-success';
+            } else {
+                modalTitle.textContent = 'Tolak Lamaran';
+                confirmBtn.textContent = 'Tolak';
+                confirmBtn.className = 'btn btn-danger';
+            }
+            
+            modal.style.display = 'block';
+        }
+
+        function confirmProcess() {
+            const form = document.getElementById('processForm');
+            const formData = new FormData(form);
+            const applicationId = document.getElementById('applicationId').value;
+            const action = document.getElementById('actionType').value;
+            
+            fetch(`/management/process-application/${applicationId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`Lamaran berhasil ${action === 'approve' ? 'disetujui' : 'ditolak'}`, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showNotification(data.error || 'Terjadi kesalahan', 'error');
+                }
+                closeModal();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Terjadi kesalahan sistem', 'error');
+                closeModal();
+            });
+        }
+
+        function viewDetails(applicationId) {
+            // Implementation for viewing application details
+            showNotification('Fitur detail akan segera tersedia', 'info');
+        }
+
+        function closeModal() {
+            document.getElementById('processModal').style.display = 'none';
+            document.getElementById('processForm').reset();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('processModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Utility functions
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 16px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 400px;
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                notification.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${message}`;
+            } else if (type === 'error') {
+                notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                notification.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>${message}`;
+            } else {
+                notification.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+                notification.innerHTML = `<i class="fas fa-info-circle" style="margin-right: 8px;"></i>${message}`;
+            }
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 4000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+{% endblock %}
