@@ -10,3 +10,4 @@ python-dateutil
 langchain
 langchain-google-genai
 pillow
+whitenoise

@@ -1,6 +1,5 @@
 # authentication/views.py - Fixed Registration
 
-import io
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -9,7 +8,6 @@ from django.views.decorators.csrf import csrf_exempt
 from management.choices import KATEGORI_KUALIFIKASI_CHOICES
 from django.contrib.auth import authenticate, login, logout
 from django.core.exceptions import ValidationError
-from PIL import Image
 from management.models import Nakes
 from .models import Departemen
 from .forms import UserRegisterForm, NakesRegistrationForm
