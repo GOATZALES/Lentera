@@ -185,3 +185,84 @@ class VolunteerProfileVerificationForm(forms.ModelForm):
             'is_profile_verified_by_admin': 'Verifikasi Profil Relawan Ini?',
             'admin_verification_notes': 'Catatan Verifikasi (Internal Admin)',
         }
+
+class EmergencyFundRequestForm(forms.ModelForm):
+    emergency_event = forms.ModelChoiceField(
+        queryset=EmergencyEvent.objects.filter(is_active=True).order_by('-activation_time'),
+        label="Kejadian Darurat Terkait",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    faskes = forms.ModelChoiceField(
+        queryset=Faskes.objects.all().order_by('nama_faskes'), # Faskes yang mengajukan
+        label="Fasilitas Kesehatan Pengaju",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    class Meta:
+        model = EmergencyFundRequest
+        fields = [
+            'emergency_event', 
+            'faskes', 
+            'requested_amount', 
+            'purpose_description'
+        ]
+        widgets = {
+            'requested_amount': forms.Select(attrs={'class': 'form-select'}),
+            'purpose_description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'Contoh: Pembelian APD tambahan, bahan bakar ambulans, obat-obatan esensial...'}),
+        }
+        labels = {
+            'requested_amount': 'Jumlah Dana yang Diajukan',
+            'purpose_description': 'Tujuan Penggunaan Dana',
+        }
+
+class EmergencyFundApprovalForm(forms.ModelForm):
+    class Meta:
+        model = EmergencyFundRequest
+        fields = ['status', 'admin_notes'] # Hanya status dan catatan admin yang bisa diubah saat approval
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'admin_notes': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3, 'placeholder': 'Catatan terkait persetujuan atau penolakan...'}),
+        }
+        labels = {
+            'status': 'Ubah Status Permintaan',
+            'admin_notes': 'Catatan Admin (Opsional)',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Batasi pilihan status hanya untuk PENDING, APPROVED, REJECTED saat approval awal
+        # Status DISBURSED dan REPORTED di-handle terpisah
+        self.fields['status'].choices = [
+            ('PENDING', 'Menunggu Persetujuan'),
+            ('APPROVED', 'Disetujui'),
+            ('REJECTED', 'Ditolak'),
+        ]
+        if self.instance and self.instance.pk: # Jika sedang mengedit instance yang sudah ada
+             # Jika sudah approved, hanya bisa jadi disbursed, atau jika sudah disbursed bisa jadi reported
+            if self.instance.status == 'APPROVED':
+                self.fields['status'].choices = [('APPROVED', 'Disetujui'), ('DISBURSED', 'Telah Dicairkan')]
+            elif self.instance.status == 'DISBURSED':
+                 self.fields['status'].choices = [('DISBURSED', 'Telah Dicairkan'), ('REPORTED', 'Laporan Diterima')]
+
+
+class FundDisbursementForm(forms.ModelForm):
+    class Meta:
+        model = EmergencyFundRequest
+        fields = ['disbursement_proof'] # Untuk upload bukti transfer
+        widgets = {
+            'disbursement_proof': forms.ClearableFileInput(attrs={'class': 'form-input-file'}),
+        }
+        labels = {
+            'disbursement_proof': 'Unggah Bukti Pencairan Dana',
+        }
+
+class FundReportSubmissionForm(forms.ModelForm):
+    class Meta:
+        model = EmergencyFundRequest
+        fields = ['spending_report_file'] # Untuk upload laporan
+        widgets = {
+            'spending_report_file': forms.ClearableFileInput(attrs={'class': 'form-input-file'}),
+        }
+        labels = {
+            'spending_report_file': 'Unggah Laporan Penggunaan Dana',
+        }

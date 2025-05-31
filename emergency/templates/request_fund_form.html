@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto p-6 bg-white rounded-lg shadow-xl">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">{{ page_title }}</h1>
+
+    {% include "_messages.html" %}
+
+    <p class="text-sm text-gray-700 mb-6">
+        Formulir ini digunakan untuk mengajukan permintaan dana darurat operasional bagi fasilitas kesehatan yang terdampak bencana atau menangani lonjakan kasus akibat kejadian darurat.
+        Pastikan data yang diisi akurat dan sesuai dengan kebutuhan mendesak.
+    </p>
+
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+        
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+            </label>
+            {{ field }}
+            {% if field.help_text %}
+                <p class="mt-1 text-xs text-gray-500">{{ field.help_text|safe }}</p>
+            {% endif %}
+            {% for error in field.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endfor %}
+
+        <div class="flex justify-end pt-5 border-t">
+            <button type="submit" class="py-2.5 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Ajukan Permintaan Dana
+            </button>
+        </div>
+    </form>
+</div>
+{% include "_form_styling.html" %} {# Template styling form yang sudah ada #}
+{% endblock %}

@@ -340,3 +340,129 @@ def resource_tracking_dashboard(request, event_id):
         'page_title': f"Pelacakan Sumber Daya: {event.disaster_type}"
     }
     return render(request, 'resource_tracking_dashboard.html', context)
+
+def request_emergency_fund(request):
+    """Halaman untuk Faskes (atau Admin atas nama Faskes) membuat permintaan dana."""
+    if request.method == 'POST':
+        form = EmergencyFundRequestForm(request.POST)
+        if form.is_valid():
+            fund_request = form.save(commit=False)
+            # Jika Faskes login dan ada relasi user di model Faskes:
+            # try:
+            #    fund_request.faskes = request.user.faskes_profile
+            # except Faskes.DoesNotExist:
+            #    messages.error(request, "Profil Faskes Anda tidak ditemukan.")
+            #    return render(request, 'emergency/request_fund_form.html', {'form': form, 'page_title': "Formulir Permintaan Dana Darurat"})
+            
+            # Jika Faskes dipilih dari form (seperti implementasi saat ini):
+            fund_request.save() # faskes dan emergency_event sudah diisi dari form
+            
+            messages.success(request, f"Permintaan dana untuk {fund_request.faskes.nama_faskes} berhasil diajukan.")
+            return redirect('emergency:list_fund_requests') # Ke halaman list permintaan (admin view) atau dashboard Faskes
+    else:
+        form = EmergencyFundRequestForm()
+
+    context = {
+        'form': form,
+        'page_title': "Formulir Permintaan Dana Darurat Operasional"
+    }
+    return render(request, 'request_fund_form.html', context)
+
+
+# @login_required # Hanya admin
+# @permission_required('emergency.view_emergencyfundrequest', raise_exception=True)
+def list_fund_requests(request):
+    """Halaman Admin untuk melihat semua permintaan dana darurat."""
+    status_filter = request.GET.get('status_filter')
+    event_filter = request.GET.get('event_filter')
+
+    requests_list = EmergencyFundRequest.objects.select_related('emergency_event', 'faskes', 'approved_by').all()
+
+    if status_filter:
+        requests_list = requests_list.filter(status=status_filter)
+    if event_filter:
+        requests_list = requests_list.filter(emergency_event_id=event_filter)
+    
+    active_events = EmergencyEvent.objects.filter(is_active=True)
+
+    context = {
+        'fund_requests': requests_list,
+        'status_choices': EmergencyFundRequest.REQUEST_STATUS_CHOICES,
+        'active_events': active_events,
+        'current_status_filter': status_filter,
+        'current_event_filter': event_filter,
+        'page_title': "Daftar Permintaan Dana Darurat"
+    }
+    return render(request, 'list_fund_requests.html', context)
+
+
+# @login_required # Hanya admin
+# @permission_required('emergency.change_emergencyfundrequest', raise_exception=True)
+def manage_fund_request(request, request_id):
+    fund_request = get_object_or_404(EmergencyFundRequest, id=request_id)
+    
+    approval_form = EmergencyFundApprovalForm(instance=fund_request, prefix="approval")
+    disbursement_form = FundDisbursementForm(instance=fund_request, prefix="disbursement")
+    report_form = FundReportSubmissionForm(instance=fund_request, prefix="report")
+
+    if request.method == 'POST':
+        original_status = fund_request.status # Simpan status asli
+
+        if 'submit_approval' in request.POST:
+            approval_form = EmergencyFundApprovalForm(request.POST, instance=fund_request, prefix="approval")
+            if approval_form.is_valid():
+                updated_request = approval_form.save(commit=False)
+                if updated_request.status == 'APPROVED' and original_status != 'APPROVED':
+                    updated_request.approved_by = request.user
+                    updated_request.approval_date = timezone.now()
+                elif updated_request.status == 'REJECTED' and original_status != 'REJECTED': # Juga catat approval_date saat ditolak
+                    updated_request.approved_by = request.user
+                    updated_request.approval_date = timezone.now() 
+                
+                # Jika status diubah dari APPROVED ke DISBURSED
+                if updated_request.status == 'DISBURSED' and original_status == 'APPROVED':
+                    updated_request.disbursement_date = timezone.now() # Otomatis set tanggal pencairan
+                    # Logika untuk upload bukti transfer jika field disbursement_proof tidak di form ini
+
+                updated_request.save()
+                messages.success(request, f"Status permintaan dana untuk {fund_request.faskes.nama_faskes} berhasil diperbarui.")
+                return redirect('emergency:manage_fund_request', request_id=fund_request.id)
+        
+        elif 'submit_disbursement' in request.POST:
+            # Hanya proses jika status adalah APPROVED
+            if fund_request.status == 'APPROVED':
+                disbursement_form = FundDisbursementForm(request.POST, request.FILES, instance=fund_request, prefix="disbursement")
+                if disbursement_form.is_valid():
+                    updated_request = disbursement_form.save(commit=False)
+                    updated_request.status = 'DISBURSED' # Ubah status jadi DISBURSED
+                    updated_request.disbursement_date = timezone.now()
+                    updated_request.save()
+                    messages.success(request, f"Bukti pencairan dana untuk {fund_request.faskes.nama_faskes} berhasil diunggah dan status diperbarui.")
+                    return redirect('emergency:manage_fund_request', request_id=fund_request.id)
+            else:
+                messages.error(request, "Permintaan dana belum disetujui atau sudah dalam status lain.")
+
+
+        elif 'submit_report' in request.POST:
+             # Hanya proses jika status adalah DISBURSED
+            if fund_request.status == 'DISBURSED':
+                report_form = FundReportSubmissionForm(request.POST, request.FILES, instance=fund_request, prefix="report")
+                if report_form.is_valid():
+                    updated_request = report_form.save(commit=False)
+                    updated_request.status = 'REPORTED' # Ubah status jadi REPORTED
+                    updated_request.report_submission_date = timezone.now()
+                    updated_request.save()
+                    messages.success(request, f"Laporan penggunaan dana untuk {fund_request.faskes.nama_faskes} berhasil diunggah.")
+                    return redirect('emergency:manage_fund_request', request_id=fund_request.id)
+            else:
+                messages.error(request, "Dana belum dicairkan atau sudah dilaporkan.")
+
+
+    context = {
+        'fund_request': fund_request,
+        'approval_form': approval_form,
+        'disbursement_form': disbursement_form,
+        'report_form': report_form,
+        'page_title': f"Kelola Permintaan Dana: {fund_request.faskes.nama_faskes}"
+    }
+    return render(request, 'manage_fund_request.html', context)
