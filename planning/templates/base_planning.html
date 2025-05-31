@@ -89,15 +89,21 @@
             <div class="collapse navbar-collapse" id="planningNavContent">
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'planning:dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'planning:dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard Forecast</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'budget_plan' %}active{% endif %}" href="{% url 'planning:budget_plan' %}"><i class="fas fa-file-invoice-dollar"></i> Rencana Budget</a>
                     </li>
-                     <li class="nav-item">
+                    <!-- TAMBAHKAN LINK INI -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.view_name == 'planning:disaster_dashboard' or request.resolver_match.view_name == 'planning:disaster_event_detail' %}active{% endif %}" href="{% url 'planning:disaster_dashboard' %}">
+                            <i class="fas fa-shield-alt"></i> Risiko Bencana
+                        </a>
+                    </li>
+                    <!--  ------------------- -->
+                    <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'export_csv' %}active{% endif %}" href="{% url 'planning:export_csv' %}"><i class="fas fa-file-csv"></i> Export CSV</a>
                     </li>
-                    <!-- Tambahkan link lain jika ada, misal link kembali ke Main App atau Logout -->
                     <li class="nav-item">
                         <a class="nav-link" href="#"><i class="fas fa-sign-out-alt"></i> Logout (Placeholder)</a>
                     </li>

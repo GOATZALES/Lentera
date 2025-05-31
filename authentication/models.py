@@ -46,6 +46,18 @@ class Faskes(models.Model):
     
     is_active_partner = models.BooleanField(default=True)
     joined_date = models.DateField(auto_now_add=True)
+
+    subscription_tier_id_str = models.CharField(
+        max_length=20, 
+        default='STANDARD', 
+        choices=[
+            ('3T_REGIONS', '3T Regions Tier'),
+            ('STANDARD', 'Standard Tier'),
+            ('PREMIUM', 'Premium Tier'),
+        ],
+        help_text="ID tier langganan Faskes (diset saat Faskes menjadi partner)"
+    )
+    
     def __str__(self):
         return self.nama_faskes
 

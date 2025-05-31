@@ -1,0 +1,722 @@
+{% load static %}
+
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lentera HealthConnect - Solusi Cerdas Tenaga Kesehatan Anda</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@400;500;700&display=swap');
+
+        :root {
+            --font-primary: 'Poppins', sans-serif;
+            --font-secondary: 'Roboto', sans-serif;
+            --color-primary: #4A90E2; /* Biru Lentera */
+            --color-secondary: #7B61FF; /* Ungu Lentera */
+            --color-accent: #FFC107; /* Kuning Emas */
+            --color-text-dark: #2D3748;
+            --color-text-light: #718096;
+            --color-bg-light: #F8FAFC;
+            --color-bg-dark-section: #1A202C; /* Untuk section gelap jika ada */
+            --color-white: #FFFFFF;
+            --border-radius: 12px;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-secondary);
+            color: var(--color-text-light);
+            line-height: 1.7;
+            background-color: var(--color-white);
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--font-primary);
+            color: var(--color-text-dark);
+            font-weight: 600;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            background-color: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-md);
+            padding: 15px 0;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .navbar-scrolled {
+            background-color: var(--color-white);
+            box-shadow: var(--shadow-lg);
+        }
+        .navbar .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .navbar-brand {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        .navbar-brand i {
+            margin-right: 10px;
+            color: var(--color-accent);
+        }
+        .nav-links {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--color-text-dark);
+            font-weight: 500;
+            transition: color 0.3s ease;
+            padding-bottom: 5px;
+            position: relative;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--color-primary);
+        }
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: var(--color-primary);
+            transition: width 0.3s ease;
+        }
+        .nav-links a:hover::after, .nav-links a.active::after {
+            width: 100%;
+        }
+        .nav-cta {
+            background-color: var(--color-primary);
+            color: var(--color-white) !important; /* Pakai !important untuk override */
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .nav-cta:hover {
+            background-color: var(--color-secondary);
+            transform: translateY(-2px);
+            color: var(--color-white) !important;
+        }
+        .nav-cta::after { display: none !important; } /* Hilangkan underline hover untuk CTA */
+
+        .mobile-nav-toggle { display: none; } /* Untuk mobile nanti */
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.85) 0%, rgba(123, 97, 255, 0.85) 100%), url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80') no-repeat center center/cover;
+            color: var(--color-white);
+            padding: 180px 0 120px 0;
+            text-align: center;
+            position: relative;
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--color-white);
+            line-height: 1.2;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .hero-content .highlight {
+            background: linear-gradient(to right, var(--color-accent), #FFD700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding: 0 5px;
+        }
+        .hero-content p {
+            font-size: 1.25rem;
+            margin-bottom: 30px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            opacity: 0.9;
+        }
+        .hero-cta-button {
+            background-color: var(--color-accent);
+            color: var(--color-text-dark);
+            padding: 15px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+        .hero-cta-button:hover {
+            background-color: #FFB300; /* Aksen lebih gelap */
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+        .hero-illustration { /* Jika Anda punya ilustrasi/gambar produk */
+            /* max-width: 500px; margin-top: 40px; */
+        }
+
+        /* Section Styling */
+        .section {
+            padding: 80px 0;
+        }
+        .section-light {
+            background-color: var(--color-white);
+        }
+        .section-gray {
+            background-color: var(--color-bg-light);
+        }
+        .section-title {
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--color-text-dark);
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .section-title::after { /* Underline dekoratif */
+            content: '';
+            display: block;
+            width: 70px;
+            height: 4px;
+            background-color: var(--color-primary);
+            margin: 10px auto 40px auto;
+            border-radius: 2px;
+        }
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.1rem;
+            color: var(--color-text-light);
+            max-width: 700px;
+            margin: 0 auto 50px auto;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+        .feature-card {
+            background-color: var(--color-white);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-lg);
+        }
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--color-primary);
+            margin-bottom: 20px;
+            background-color: rgba(74, 144, 226, 0.1);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .feature-card h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .feature-card p {
+            font-size: 0.95rem;
+        }
+
+        /* How It Works Section */
+        .how-it-works-steps {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .step-card {
+            background-color: var(--color-white);
+            padding: 25px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            width: 100%;
+            max-width: 320px;
+            text-align: center;
+        }
+        .step-number {
+            background-color: var(--color-primary);
+            color: var(--color-white);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 0 0 8px rgba(74, 144, 226, 0.15);
+        }
+        .step-card h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .step-card p {
+            font-size: 0.9rem;
+        }
+
+        /* Testimonials Section */
+        .testimonial-card {
+            background-color: var(--color-primary);
+            color: var(--color-white);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .testimonial-quote {
+            font-size: 1.1rem;
+            font-style: italic;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        .testimonial-author {
+            font-weight: 600;
+        }
+        .testimonial-author span {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 400;
+            opacity: 0.8;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: var(--color-secondary);
+            color: var(--color-white);
+            text-align: center;
+        }
+        .cta-section h2 { color: var(--color-white); }
+        .cta-section p { color: rgba(255,255,255,0.85); }
+        .cta-section .section-title::after { background-color: var(--color-accent); }
+
+
+        /* Footer */
+        footer {
+            background-color: var(--color-text-dark);
+            color: #A0AEC0; /* gray-400 */
+            padding: 50px 0;
+            text-align: center;
+        }
+        footer .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .footer-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-white);
+            margin-bottom: 15px;
+        }
+        .footer-logo i { color: var(--color-accent); }
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 20px;
+        }
+        .footer-links a {
+            color: #CBD5E0; /* gray-300 */
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .footer-links a:hover {
+            color: var(--color-white);
+        }
+        .social-icons {
+            margin-bottom: 20px;
+        }
+        .social-icons a {
+            color: #CBD5E0;
+            font-size: 1.5rem;
+            margin: 0 10px;
+            transition: color 0.3s ease;
+        }
+        .social-icons a:hover {
+            color: var(--color-primary);
+        }
+        .copyright {
+            font-size: 0.9rem;
+        }
+
+        /* Mobile Nav */
+        @media (max-width: 768px) {
+            .nav-links { display: none; /* Sembunyikan untuk mobile, akan dibuat menu toggle */ }
+            .mobile-nav-toggle {
+                display: block;
+                background: none;
+                border: none;
+                color: var(--color-text-dark);
+                font-size: 1.8rem;
+                cursor: pointer;
+            }
+            .navbar-scrolled .mobile-nav-toggle { color: var(--color-text-dark); }
+            .hero-content h1 { font-size: 2.5rem; }
+            .hero-content p { font-size: 1.1rem; }
+            .section-title { font-size: 1.8rem; }
+            .how-it-works-steps { flex-direction: column; align-items: center; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="#" class="navbar-brand"><img src="{% static 'images/logo-text-small.png' %}" alt="Logo Perusahaan" class="w-full h-auto"></a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#hero" class="active">Beranda</a></li>
+                <li><a href="#features">Fitur</a></li>
+                <li><a href="#how-it-works">Cara Kerja</a></li>
+                <li><a href="#pricing">Harga</a></li>
+                <li><a href="#contact">Kontak</a></li>
+                <li><a href="{% url 'authentication:login' %}" class="nav-cta">Login / Partner</a></li>
+            </ul>
+            <button class="mobile-nav-toggle" id="mobileNavToggle"><i class="fas fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero" id="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1>Optimalkan Tenaga Medis Anda dengan <span class="highlight">AI Cerdas</span></h1>
+                <p>Lentera HealthConnect menghubungkan Faskes dengan Nakes berkualitas secara real-time, didukung prediksi kebutuhan cerdas untuk efisiensi maksimal.</p>
+                <a href="#pricing" class="hero-cta-button">Jadi Partner Kami <i class="fas fa-arrow-right ms-2"></i></a>
+                <!-- <img src="path/to/your/hero-illustration.svg" alt="Lentera Dashboard Mockup" class="hero-illustration"> -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="features" class="section section-light">
+        <div class="container">
+            <h2 class="section-title">Mengapa Memilih Lentera?</h2>
+            <p class="section-subtitle">Solusi inovatif untuk mengatasi tantangan kekurangan dan distribusi tenaga kesehatan di Indonesia.</p>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-users-cog"></i></div>
+                    <h3>Workforce Matching Cerdas</h3>
+                    <p>Temukan Nakes (dokter, perawat, volunteer) terverifikasi sesuai kebutuhan shift, lokasi, dan budget Anda secara instan.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-brain"></i></div>
+                    <h3>AI Demand Forecasting</h3>
+                    <p>Prediksi kebutuhan SDM mingguan/bulanan dengan akurasi tinggi berdasarkan data historis, musim penyakit, dan faktor eksternal.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h3>Respons Bencana Cepat</h3>
+                    <p>Sistem otomatisasi penugasan Nakes dan volunteer ke area terdampak bencana, percepat waktu respons saat krisis.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fas fa-hand-holding-usd"></i></div>
+                    <h3>Ekosistem Pendanaan Fleksibel</h3>
+                    <p>Akses sumber pendanaan alternatif (Non-BPJS) untuk mendukung operasional Faskes dan respons darurat.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="section section-gray">
+        <div class="container">
+            <h2 class="section-title">Bagaimana Lentera Bekerja?</h2>
+            <p class="section-subtitle">Proses yang mudah dan transparan untuk Faskes dan Tenaga Kesehatan.</p>
+            <div class="how-it-works-steps">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h4>Faskes Jadi Partner</h4>
+                    <p>Faskes mendaftar dan menyediakan data operasional dasar. Kami bantu proses onboarding.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h4>AI Memberi Insight</h4>
+                    <p>Sistem AI kami menganalisa data Anda dan menghasilkan prediksi kebutuhan SDM serta alert risiko.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h4>Matching & Penugasan</h4>
+                    <p>Platform mencocokkan kebutuhan shift Faskes dengan Nakes yang tersedia dan terverifikasi.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h4>Operasional Optimal</h4>
+                    <p>Faskes mendapatkan dukungan SDM yang tepat waktu, layanan pasien meningkat, biaya lebih efisien.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="section section-light">
+        <div class="container">
+            <h2 class="section-title">Strategi Harga Fleksibel</h2>
+            <p class="section-subtitle">Pilih paket yang paling sesuai dengan kebutuhan dan skala operasional Faskes Anda.</p>
+            <!-- Di sini Anda bisa embed atau meniru tampilan pricing yang sudah dibuat sebelumnya -->
+            <!-- Untuk demo, saya akan buat versi sederhana -->
+            <div class="pricing-tiers" style="margin-top: 0;"> <!-- Hilangkan margin-top jika ini satu-satunya pricing -->
+                 <!-- 3T Regions Tier -->
+                <div class="tier tier-3t" data-tier-id="3t_regions_lp">
+                    <div class="social-impact-tag">Social Impact</div>
+                    <div class="tier-icon"><i class="fas fa-globe-asia"></i></div>
+                    <h3 class="tier-name">3T Regions Tier</h3>
+                    <p class="tier-price" style="font-size:1.5rem; color:var(--color-3t);">FREE - 1% <small>platform fee</small></p>
+                    <ul class="tier-features">
+                        <li><i class="fas fa-check-circle"></i> Platform fee hanya 1%</li>
+                        <li><i class="fas fa-check-circle"></i> Gratis untuk emergency response</li>
+                        <li><i class="fas fa-check-circle"></i> Basic AI forecasting</li>
+                    </ul>
+                     <a href="#contact" class="tier-button">Hubungi Kami</a>
+                </div>
+
+                <!-- Standard Tier -->
+                <div class="tier tier-standard" data-tier-id="standard_lp">
+                    <div class="tier-icon"><i class="fas fa-building"></i></div>
+                    <h3 class="tier-name">Standard Tier</h3>
+                    <p class="tier-price" style="font-size:1.5rem; color:var(--color-standard);">2-3% <small>platform fee</small></p>
+                    <ul class="tier-features">
+                        <li><i class="fas fa-check-circle"></i> Standard matching algorithm</li>
+                        <li><i class="fas fa-check-circle"></i> Basic analytics dashboard</li>
+                        <li><i class="fas fa-check-circle"></i> Email support</li>
+                    </ul>
+                     <a href="#contact" class="tier-button">Hubungi Kami</a>
+                </div>
+
+                <!-- Premium Tier -->
+                <div class="tier tier-premium" data-tier-id="premium_lp">
+                    <div class="tier-icon"><i class="fas fa-star"></i></div>
+                    <h3 class="tier-name">Premium Tier</h3>
+                    <p class="tier-price" style="font-size:1.5rem; color:var(--color-premium);">3-5% + Rp 2jt/bln</p>
+                    <ul class="tier-features">
+                        <li><i class="fas fa-check-circle"></i> Advanced AI forecasting</li>
+                        <li><i class="fas fa-check-circle"></i> Custom reporting</li>
+                        <li><i class="fas fa-check-circle"></i> 24/7 phone support</li>
+                    </ul>
+                    <a href="#contact" class="tier-button">Hubungi Kami</a>
+                </div>
+            </div>
+            <p class="text-center mt-4"><a href="#" id="viewFullPricing" class="text-decoration-none fw-bold" style="color: var(--color-primary);">Lihat Detail Pricing Lengkap <i class="fas fa-external-link-alt fa-xs"></i></a></p>
+        </div>
+    </section>
+
+    <!-- Testimonial Section (Contoh) -->
+    <section class="section section-gray">
+        <div class="container">
+            <h2 class="section-title">Apa Kata Partner Kami?</h2>
+            <div class="testimonial-card">
+                <p class="testimonial-quote">"Lentera HealthConnect telah mengubah cara kami mengelola kebutuhan tenaga medis, terutama saat ada lonjakan pasien tak terduga. Fitur AI forecasting sangat membantu kami lebih siap!"</p>
+                <p class="testimonial-author">Dr. Budi Santoso <span>Kepala Klinik Medika Jaya</span></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action (CTA) Section -->
+    <section id="contact" class="section cta-section">
+        <div class="container">
+            <h2 class="section-title">Siap Mengoptimalkan Layanan Kesehatan Anda?</h2>
+            <p class="section-subtitle">Bergabunglah dengan jaringan Faskes dan Nakes inovatif bersama Lentera HealthConnect. Mari kita tingkatkan kualitas layanan kesehatan di Indonesia bersama-sama.</p>
+            <a href="#" class="hero-cta-button" style="background-color: var(--color-accent); color: var(--color-text-dark);">
+                <i class="fas fa-hands-helping me-2"></i> Daftar Sebagai Partner Sekarang
+            </a>
+            <p class="mt-4">Atau <a href="mailto:partner@lentera.id" style="color: var(--color-white); font-weight:500; text-decoration:underline;">hubungi tim kami</a> untuk konsultasi lebih lanjut.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <a href="#" class="footer-logo"><img src="{% static 'images/logo-text-small.png' %}" alt="Logo Perusahaan"></a>
+            <ul class="footer-links">
+                <li><a href="#features">Fitur</a></li>
+                <li><a href="#how-it-works">Cara Kerja</a></li>
+                <li><a href="#pricing">Harga</a></li>
+                <li><a href="#">FAQ</a></li>
+            </ul>
+            <div class="social-icons">
+                <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+            <p class="copyright">© {% now "Y" %} Lentera HealthConnect. Didukung oleh AI untuk Indonesia Sehat.</p>
+        </div>
+    </footer>
+
+    <!-- Modal untuk Full Pricing (Konten sama dengan halaman pricing strategy Anda) -->
+    <div id="fullPricingModal" style="display:none; position:fixed; inset:0; background-color:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center; padding:20px; overflow-y:auto;">
+        <div style="background:white; padding:30px; border-radius:16px; max-width:900px; width:100%; position:relative;">
+            <button id="closeFullPricingModal" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:1.5rem; cursor:pointer;">×</button>
+            <!-- Di sini Anda bisa paste HTML dari halaman pricing_strategy.html yang sudah dibuat -->
+            <h2 style="text-align:center; margin-bottom:20px; font-weight:700; color:var(--color-text-dark);">Detail Strategi Harga Kami</h2>
+            <p style="text-align:center; margin-bottom:30px;">Konten detail pricing akan ditampilkan di sini...</p>
+            <div class="pricing-tiers" style="gap:20px; flex-direction:row;">
+                <!-- 3T (Copy dari atas, mungkin sedikit modifikasi untuk modal) -->
+                <div class="tier tier-3t" style="max-width:280px; padding:20px;">
+                     <div class="social-impact-tag" style="font-size:0.65rem; padding: 4px 25px; right:-30px;">Social Impact</div>
+                     <div class="tier-icon" style="font-size:1.8rem; width:40px; height:40px;"><i class="fas fa-globe-asia"></i></div>
+                     <h3 class="tier-name" style="font-size:1.3rem;">3T Regions Tier</h3>
+                     <p class="tier-price" style="font-size:1.4rem; color:var(--color-3t);">FREE - 1%</p>
+                     <ul class="tier-features" style="font-size:0.85rem;">
+                         <li><i class="fas fa-check-circle"></i> Platform fee hanya 1%</li>
+                         <li><i class="fas fa-check-circle"></i> Gratis emergency response</li>
+                         <li><i class="fas fa-check-circle"></i> Basic AI forecasting</li>
+                         <li><i class="fas fa-check-circle"></i> Priority matching underserved</li>
+                         <li><i class="fas fa-check-circle"></i> Subsidized training</li>
+                     </ul>
+                 </div>
+                 <!-- Standard (Copy dari atas) -->
+                <div class="tier tier-standard" style="max-width:280px; padding:20px;">
+                     <div class="tier-icon" style="font-size:1.8rem; width:40px; height:40px;"><i class="fas fa-building"></i></div>
+                     <h3 class="tier-name" style="font-size:1.3rem;">Standard Tier</h3>
+                     <p class="tier-price" style="font-size:1.4rem; color:var(--color-standard);">2-3%</p>
+                     <ul class="tier-features" style="font-size:0.85rem;">
+                         <li><i class="fas fa-check-circle"></i> Platform fee 2-3%</li>
+                         <li><i class="fas fa-check-circle"></i> Standard matching</li>
+                         <li><i class="fas fa-check-circle"></i> Basic analytics</li>
+                         <li><i class="fas fa-check-circle"></i> Email support</li>
+                         <li><i class="fas fa-check-circle"></i> Standard payment</li>
+                     </ul>
+                 </div>
+                 <!-- Premium (Copy dari atas) -->
+                <div class="tier tier-premium" style="max-width:280px; padding:20px; border-width:1px; transform: scale(1);">
+                     <div class="tier-icon" style="font-size:1.8rem; width:40px; height:40px;"><i class="fas fa-star"></i></div>
+                     <h3 class="tier-name" style="font-size:1.3rem;">Premium Tier</h3>
+                     <p class="tier-price" style="font-size:1.4rem; color:var(--color-premium);">3-5% + Rp 2M/bln</p>
+                     <ul class="tier-features" style="font-size:0.85rem;">
+                         <li><i class="fas fa-check-circle"></i> Advanced AI forecasting</li>
+                         <li><i class="fas fa-check-circle"></i> Priority matching</li>
+                         <li><i class="fas fa-check-circle"></i> Custom reporting</li>
+                         <li><i class="fas fa-check-circle"></i> Dedicated account manager</li>
+                         <li><i class="fas fa-check-circle"></i> 24/7 phone support</li>
+                     </ul>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        window.onscroll = function() {
+            if (window.pageYOffset > 50) {
+                navbar.classList.add('navbar-scrolled');
+            } else {
+                navbar.classList.remove('navbar-scrolled');
+            }
+        };
+
+        // Mobile nav toggle (sangat dasar, perlu CSS untuk menu mobile sebenarnya)
+        const mobileNavToggle = document.getElementById('mobileNavToggle');
+        const navLinks = document.getElementById('navLinks');
+        if (mobileNavToggle && navLinks) {
+            mobileNavToggle.addEventListener('click', () => {
+                navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+                // Anda perlu menambahkan styling CSS agar menu mobile terlihat bagus
+                // Ini hanya toggle display sederhana
+            });
+        }
+        
+        // Active link highlighting
+        const sections = document.querySelectorAll('section[id]');
+        const navLi = document.querySelectorAll('.nav-links a');
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (pageYOffset >= sectionTop - 100) { // 100px offset
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLi.forEach(a => {
+                a.classList.remove('active');
+                if (a.getAttribute('href') === `#${current}`) {
+                    a.classList.add('active');
+                }
+            });
+             // Highlight Beranda jika di paling atas
+            if (pageYOffset < sections[0].offsetTop - 100) {
+                navLi.forEach(a => a.classList.remove('active'));
+                document.querySelector('.nav-links a[href="#hero"]').classList.add('active');
+            }
+        });
+
+
+        // Full Pricing Modal
+        const viewFullPricingBtn = document.getElementById('viewFullPricing');
+        const fullPricingModal = document.getElementById('fullPricingModal');
+        const closeFullPricingModalBtn = document.getElementById('closeFullPricingModal');
+
+        if(viewFullPricingBtn && fullPricingModal && closeFullPricingModalBtn) {
+            viewFullPricingBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                fullPricingModal.style.display = 'flex';
+                setTimeout(() => { fullPricingModal.style.opacity = 1; }, 10); // Untuk transisi
+            });
+            closeFullPricingModalBtn.addEventListener('click', () => {
+                fullPricingModal.style.opacity = 0;
+                setTimeout(() => { fullPricingModal.style.display = 'none'; }, 300);
+            });
+            fullPricingModal.addEventListener('click', (e) => {
+                if (e.target === fullPricingModal) {
+                    fullPricingModal.style.opacity = 0;
+                    setTimeout(() => { fullPricingModal.style.display = 'none'; }, 300);
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
