@@ -1,0 +1,195 @@
+{% extends "base_planning.html" %} {# Diubah #}
+{% load static %}
+{% load planning_extras %}
+
+{% block title %}Dashboard Perencanaan - Faskes {{ faskes_id }}{% endblock %}
+
+{% block extra_css %}
+    {# {{ block.super }} Tidak perlu jika base_planning tidak extend base lain #}
+    <style>
+        /* ... (style spesifik dashboard yang sudah Anda buat sebelumnya) ... */
+        .planning-container { padding: 24px; } /* Konten utama diberi padding */
+        .planning-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+        .planning-card h2 {
+            color: #1e293b;
+            font-weight: 700;
+            margin-bottom: 16px;
+            font-size: 1.75rem; /* Sesuaikan dengan style management */
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f5f9; /* Mirip .month-title di histori_kinerja.css */
+        }
+        .table { margin-top: 20px; }
+        .btn-info-planning {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Mirip stat-card.shifts */
+            color: white; border: none; padding: .375rem .75rem;
+            font-size: 0.875rem; border-radius: 0.25rem;
+        }
+        .btn-info-planning:hover { opacity: 0.9; }
+        .alert-planning.danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding:1rem; border-radius:8px; }
+        .profile-header { text-align: center; margin-bottom: 30px;} /* Meniru .profile-header */
+        .profile-header .profile-name { font-size: 28px; font-weight: 700; color: #1e293b;}
+        .profile-header .profile-profession { font-size: 16px; color: #64748b;}
+    </style>
+{% endblock %}
+
+{% block content_planning %} {# Diubah #}
+<div class="planning-container">
+    <div class="profile-header">
+        <h1 class="profile-name">Dashboard Perencanaan</h1>
+        <p class="profile-profession">Faskes ID: <strong>{{ faskes_id }}</strong></p>
+    </div>
+
+    {% if error_message %}
+        <div class="alert alert-danger alert-planning danger">{{ error_message }}</div>
+    {% endif %}
+
+    <div class="planning-card">
+        <h2><i class="fas fa-chart-line" style="color: #4facfe;"></i> Visualisasi Prediksi vs Aktual (Dokter Umum)</h2>
+        <div style="width: 100%; max-width: 900px; margin: auto; height: 400px;">
+            <canvas id="demandChart"></canvas>
+        </div>
+    </div>
+
+    <div class="planning-card">
+        <h2><i class="fas fa-history" style="color: #667eea;"></i> Riwayat Forecast Terbaru</h2>
+        {% if forecast_history %}
+            <div class="table-responsive">
+                <table class="table table-hover"> {# Tambah table-hover agar mirip #}
+                    <thead class="table-light"> {# Header tabel lebih jelas #}
+                        <tr>
+                            <th>ID Log AI</th>
+                            <th>Periode</th>
+                            <th>Diminta Pada</th>
+                            <th>Prediksi Dokter Umum</th>
+                            <th>Akurasi Keseluruhan</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for forecast in forecast_history %}
+                        <tr>
+                            <td>{{ forecast.ai_request_log_id }}</td>
+                            <td>{{ forecast.period_start }} s/d {{ forecast.period_end }}</td>
+                            <td>{{ forecast.requested_at|date:"d M Y, H:i" }}</td>
+                            <td>{{ forecast.parsed_ai_output.predicted_staffing_demand.Dokter_Umum|default:"N/A" }}</td>
+                            <td>
+                                {% if forecast.feedback_info.overall_accuracy_score is not None %}
+                                    <span class="badge 
+                                        {% if forecast.feedback_info.overall_accuracy_score >= 75 %}bg-success{% elif forecast.feedback_info.overall_accuracy_score >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                        {{ forecast.feedback_info.overall_accuracy_score }}%
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Belum ada feedback</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'planning:forecast_detail' forecast.ai_request_log_id %}" class="btn btn-sm btn-info-planning">
+                                    <i class="fas fa-eye"></i> Detail & Feedback
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center p-3">
+                <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                <p>Belum ada riwayat forecast.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js_planning %} {# Diubah #}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Mengambil data chart dari context view, pastikan ini benar
+        // Cara aman adalah dengan menaruhnya di elemen data atau script tag khusus
+        let chartData;
+        try {
+            chartData = JSON.parse('{{ chart_data_json|safe|escapejs }}');
+        } catch (e) {
+            console.error("Gagal parsing chart_data_json:", e);
+            chartData = null; // Set ke null jika gagal parse
+        }
+
+        const demandChartCanvas = document.getElementById('demandChart');
+
+        if (demandChartCanvas && chartData && chartData.labels && chartData.labels.length > 0) {
+            const ctx = demandChartCanvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData.labels,
+                    datasets: [{
+                        label: 'Prediksi Dokter Umum',
+                        data: chartData.predicted_doctors,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.2,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    }, {
+                        label: 'Aktual Dokter Umum',
+                        data: chartData.actual_doctors,
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        tension: 0.2,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        spanGaps: true, // Untuk menghubungkan garis jika ada data null
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#64748b', font: { weight: '500' } },
+                            grid: { color: '#eef2f7' }
+                        },
+                        x: {
+                            ticks: { color: '#64748b', font: { weight: '500' } },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { color: '#1e293b', font: { weight: '600' } }
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            padding: 10,
+                            cornerRadius: 6,
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                }
+            });
+        } else {
+            if(demandChartCanvas) {
+                demandChartCanvas.parentElement.innerHTML = "<p class='text-center text-muted mt-3 p-4 border rounded'><i class='fas fa-chart-bar me-2'></i>Tidak ada data yang cukup untuk ditampilkan pada grafik saat ini.</p>";
+            }
+            console.log("Tidak ada data untuk chart atau chart canvas tidak ditemukan.");
+        }
+    });
+    </script>
+{% endblock %}
