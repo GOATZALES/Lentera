@@ -28,29 +28,10 @@ urlpatterns = [
     path('departemen/kelola-shift/', faskes_views.kelola_shift, name='kelola_shift'),
     path('departemen/kelola-lamaran/', faskes_views.kelola_lamaran, name='kelola_lamaran'),
     path('departemen/laporan/', faskes_views.laporan_departemen, name='laporan_departemen'),
-    # path('departemen/nakes-database/', faskes_views.nakes_database, name='nakes_database'),
     
-    # AJAX/API URLs untuk Departemen
-    # path('process-application/<int:application_id>/', faskes_views.process_application, name='process_application'),
-    # path('api/shift-stats/', faskes_views.shift_statistics_api, name='shift_stats_api'),
-    # path('api/nakes-search/', faskes_views.nakes_search_api, name='nakes_search_api'),
-    # path('api/export-laporan/', faskes_views.export_laporan, name='export_laporan'),
-    
-    # Shift Management URLs
     path('shift/create/', faskes_views.create_shift, name='create_shift'),
-    # path('shift/<int:shift_id>/edit/', faskes_views.edit_shift, name='edit_shift'),
-    # path('shift/<int:shift_id>/delete/', faskes_views.delete_shift, name='delete_shift'),
-    # path('shift/<int:shift_id>/cancel/', faskes_views.cancel_shift, name='cancel_shift'),
     
-    # # Application Management URLs  
-    # path('application/<int:application_id>/detail/', faskes_views.application_detail, name='application_detail'),
-    # path('applications/bulk-action/', faskes_views.bulk_application_action, name='bulk_application_action'),
     
-    # # Reporting URLs
-    # path('reports/performance/', faskes_views.performance_report, name='performance_report'),
-    # path('reports/attendance/', faskes_views.attendance_report, name='attendance_report'),
-    # path('reports/export/', faskes_views.export_reports, name='export_reports'),
-
     path('upload/', management_ai_services.upload_certificate_form, name='upload_form'),
     path('process/', management_ai_services.process_certificate_image, name='process_image'),
     path('categories/', management_ai_services.get_categories, name='get_categories'),

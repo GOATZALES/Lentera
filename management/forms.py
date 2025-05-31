@@ -2,6 +2,10 @@
 from django import forms
 from .models import Nakes, ShiftAssignment
 from .choices import JENIS_KELAMIN_CHOICES, PROFESI_CHOICES, STATUS_CHOICES, KATEGORI_KUALIFIKASI_CHOICES
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+
+
 
 class NakesProfileForm(forms.ModelForm):
     # Field user tidak ditampilkan karena primary_key OneToOneField
@@ -45,3 +49,10 @@ class NakesAvailabilityForm(forms.Form):
 class ClockInOutForm(forms.Form):
     # Formulir kosong hanya untuk memicu aksi clock-in/out via POST
     pass
+
+class UserRegisterForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password1', 'password2']

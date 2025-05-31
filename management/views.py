@@ -11,6 +11,7 @@ from datetime import timedelta
 import json
 
 from authentication.views import get_user_context
+from .forms import NakesProfileForm, UserRegisterForm
 from .dummy import create_dummy_data
 from .models import Nakes, Shift, ShiftAssignment, Departemen, Faskes
 from .forms import NakesProfileForm, NakesAvailabilityForm
@@ -29,34 +30,6 @@ def get_current_nakes():
 
         return nakes
 
-
-def nakes_profile_view(request):
-    nakes = get_user_context(request)
-    
-    if not nakes:
-        messages.error(request, "Nakes profile not found. Please ensure you are logged in.")
-        return redirect('authentication:login') # Redirect ke halaman lain jika nakes tidak ada
-
-    if request.method == 'POST':
-        form = NakesProfileForm(request.POST, instance=nakes)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Profil berhasil diperbarui!")
-            return redirect('management:nakes_profile')
-        else:
-            messages.error(request, "Terdapat kesalahan saat memperbarui profil. Mohon cek input Anda.")
-    else:
-        form = NakesProfileForm(instance=nakes)
-    
-    # Form untuk ketersediaan
-    availability_form = NakesAvailabilityForm()
-
-    context = {
-        'nakes': nakes,
-        'form': form,
-        'availability_form': availability_form,
-    }
-    return render(request, 'nakes_profile.html', context)
 
 
 def cari_tugas_view(request):
@@ -214,7 +187,7 @@ def accept_shift_ajax(request, shift_id):
 
 def nakes_profile_view(request):
     """View untuk halaman profile nakes dengan layout horizontal"""
-    nakes = get_user_context(request)
+    nakes = get_current_nakes()
     if not nakes:
         messages.error(request, "Nakes profile not found. Please ensure you are logged in.")
         return redirect('some_other_page')
@@ -347,7 +320,7 @@ def update_availability_ajax(request):
 
 def nakes_histori_kinerja_view(request):
     """View untuk halaman histori kinerja nakes"""
-    nakes = get_user_context(request)
+    nakes = get_current_nakes()
     if not nakes:
         messages.error(request, "Nakes profile not found.")
         return redirect('management:nakes_profile')
