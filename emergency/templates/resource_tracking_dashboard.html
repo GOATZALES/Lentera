@@ -33,6 +33,9 @@
             <h1 class="text-2xl sm:text-3xl font-bold text-theme-green-primary">{{ page_title }}</h1>
             <p class="text-sm text-gray-500">Kejadian: <strong class="text-theme-green-primary/80">{{ event.disaster_type }}</strong> ({{ event.location_description }})</p>
         </div>
+        <a href="{% url 'planning:disaster_event_detail' event_id=event.id %}" class="text-sm text-theme-blue-primary hover:underline bg-theme-blue-primary/10 px-3 py-1.5 rounded-md font-medium ring-1 ring-theme-blue-primary/20 hover:ring-theme-blue-primary/30">
+                <i class="fas fa-clipboard-list mr-1"></i> Lihat Detail Perencanaan AI
+            </a>
         <a href="{% url 'emergency:activate_emergency' %}" class="mt-2 sm:mt-0 text-sm text-theme-blue-primary hover:underline">« Kembali ke Aktivasi Darurat</a>
     </div>
 
@@ -172,8 +175,8 @@
                 popupAnchor: [0, -24] // Posisi popup relatif terhadap anchor
             });
         }
-        const professionalIcon = createCustomIcon('{{ tailwind.theme.extend.colors.theme-blue-primary }}'); // Biru
-        const volunteerIcon = createCustomIcon('{{ tailwind.theme.extend.colors.theme-green-primary }}'); // Hijau
+        const professionalIcon = createCustomIcon('#4FA9FE'); // Biru dari theme-blue-primary
+        const volunteerIcon = createCustomIcon('#0FB580');
 
 
         if (personnelPoints && personnelPoints.length > 0) {

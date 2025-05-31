@@ -105,6 +105,9 @@
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button type="button" onclick="openModal('detailModal-{{ event.id }}')" class="text-theme-blue-primary hover:text-theme-blue-primary-hover mr-2">Detail</button>
+                    <a href="{% url 'planning:disaster_event_detail' event_id=event.id %}" class="text-indigo-600 hover:text-indigo-800 mr-2" title="Lihat Detail Perencanaan AI">
+                      <i class="fas fa-brain"></i> Rencana
+                    </a>
                     <a href="{% url 'emergency:resource_tracking_dashboard' event_id=event.id %}" class="text-theme-green-primary hover:text-theme-green-primary-hover mr-3">Lacak SDM</a>
                     <form method="post" action="{% url 'emergency:deactivate_emergency' event.id %}" class="inline">
                       {% csrf_token %}

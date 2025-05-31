@@ -1,6 +1,7 @@
 {% extends "base_planning.html" %}
 {% load humanize %}
 {% block title %}{{ page_title }} - Faskes {{ faskes_id }}{% endblock %}
+{% load planning_extras %}
 
 {% block extra_css %}
     {{ block.super }}
@@ -60,8 +61,8 @@
         <p class="mb-3 text-muted">Berikut adalah kejadian darurat yang sedang aktif dan analisis risiko terkait:</p>
         <div class="row">
             {% for event in active_disaster_events %}
-            <div class="col-md-6 col-lg-4 d-flex align-items-stretch"> {/* d-flex dan align-items-stretch untuk tinggi card sama */}
-                <div class="card event-card w-100"> {/* w-100 untuk card mengisi parent col */}
+            <div class="col-md-6 col-lg-4 d-flex align-items-stretch"> 
+                <div class="card event-card w-100"> 
                     <div class="card-header event-card-header">
                         <h5 class="card-title mb-0">
                             <i class="fas fa-biohazard me-2 
@@ -71,7 +72,7 @@
                             {{ event.disaster_type }}
                         </h5>
                     </div>
-                    <div class="card-body event-card-body d-flex flex-column"> {/* d-flex flex-column untuk tombol di bawah */}
+                    <div class="card-body event-card-body d-flex flex-column"> 
                         <p><strong>Lokasi:</strong> {{ event.location_description }}</p>
                         <p><strong>Level Keparahan:</strong> 
                             <span class="
@@ -88,7 +89,7 @@
                         {% else %}
                             <p class="mt-2"><small class="text-warning"><i class="fas fa-hourglass-half me-1"></i> Analisis AI belum/tidak tersedia</small></p>
                         {% endif %}
-                        <a href="{% url 'planning:disaster_event_detail' event.id %}" class="btn btn-sm btn-view-risk-detail mt-auto w-100"> {/* mt-auto untuk tombol di bawah */}
+                        <a href="{% url 'planning:disaster_event_detail' event.id %}" class="btn btn-sm btn-view-risk-detail mt-auto w-100"> 
                             <i class="fas fa-search-location me-1"></i> Lihat Detail & Rekomendasi
                         </a>
                     </div>

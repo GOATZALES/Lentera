@@ -3,125 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Manajemen Faskes - Lentera{% endblock %}</title>
+    <title>{% block title %}Sistem Manajemen Nakes{% endblock %}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Base Styles -->
     <style>
-        /* Menggunakan variabel dan styling yang sama dengan management_base.html */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Base Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
         :root {
-            --lentera-blue-primary: #4FA9FE;
-            --lentera-blue-secondary: #1CF2FD;
-            --lentera-green-primary: #0FB580;
-            --lentera-green-secondary: #0FB55F;
-
-            --primary-gradient: linear-gradient(135deg, var(--lentera-blue-primary) 0%, var(--lentera-blue-secondary) 100%);
-            --secondary-gradient: linear-gradient(135deg, var(--lentera-green-primary) 0%, var(--lentera-green-secondary) 100%);
-            
-            --success-gradient: linear-gradient(135deg, var(--lentera-green-primary) 0%, var(--lentera-green-secondary) 100%);
+            --primary-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --secondary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
             --error-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            
             --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.08);
             --shadow-medium: 0 8px 25px rgba(0, 0, 0, 0.15);
             --shadow-heavy: 0 20px 40px rgba(0, 0, 0, 0.1);
             --border-radius: 12px;
             --transition: all 0.3s ease;
-
-            --text-dark: #1e293b;
-            --text-light: #64748b;
-            --bg-body: linear-gradient(135deg, #f0f4f8 0%, #ddebf7 100%); 
-            --bg-container: white;
-            --border-color: #e2e8f0;
         }
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-body);
+            background: var(--secondary-gradient);
             min-height: 100vh;
             padding: 20px;
             line-height: 1.6;
-            color: var(--text-light);
         }
         
+        /* Main Container */
         .main-container {
-            max-width: 1400px; margin: 0 auto; background: var(--bg-container);
-            border-radius: 16px; box-shadow: var(--shadow-heavy); overflow: hidden;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-heavy);
+            overflow: hidden;
         }
         
-        .header { background: var(--primary-gradient); padding: 0; position: relative; }
-        .tab-navigation { display: flex; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); }
+        /* Header Navigation Styles */
+        .header {
+            background: var(--primary-gradient);
+            padding: 0;
+            position: relative;
+        }
+        
+        .tab-navigation {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
         
         .tab {
-            flex: 1; padding: 20px 25px; background: none; border: none; cursor: pointer;
-            font-size: 16px; font-weight: 600; color: rgba(255, 255, 255, 0.85);
-            transition: var(--transition); text-decoration: none; display: flex;
-            align-items: center; justify-content: center; gap: 8px;
+            flex: 1;
+            padding: 20px 25px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.8);
+            transition: var(--transition);
+            position: relative;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
-        .tab:hover { color: white; background: rgba(255, 255, 255, 0.15); transform: translateY(-1px); }
-        .tab.active { color: white; background: rgba(255, 255, 255, 0.25); position: relative; }
+        
+        .tab:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+        
+        .tab.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
         .tab.active::after {
-            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px;
-            background: white; /* Atau var(--lentera-green-primary) */
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: white;
             animation: slideInIndicator 0.3s ease;
         }
-        @keyframes slideInIndicator { /* ... (sama) ... */ }
-        .tab::before { /* Badge */ content: attr(data-badge); position: absolute; top: 8px; right: 8px; background: var(--lentera-green-primary); display: none; /* ... (sisa) ... */ }
-        .tab[data-badge]:not([data-badge=""])::before { display: flex; }
-
-        .content { min-height: 600px; }
-        .messages { margin: 20px 24px; }
-        .message { /* ... (styling message seperti di login) ... */ 
-            padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; animation: slideIn 0.3s ease;
+        
+        @keyframes slideInIndicator {
+            from {
+                width: 0;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+            to {
+                width: 100%;
+                left: 0;
+                transform: translateX(0);
+            }
         }
-        .message.success { background: #d1fadf; color: #0A7156; border: 1px solid #a1eecf; }
-        .message.error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-        .message.info { background: #e0f2fe; color: #0c5796; border: 1px solid #bae6fd; }
-        .message.warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
-
-        .spinner { /* ... (sama) ... */ }
-        @media (max-width: 768px) { /* ... */ }
-        @media (max-width: 480px) { /* ... */ }
+        
+        /* Badge for notifications (future use) */
+        .tab::before {
+            content: attr(data-badge);
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ef4444;
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 10px;
+            min-width: 16px;
+            height: 16px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        
+        .tab[data-badge]:not([data-badge=""])::before {
+            display: flex;
+        }
+        
+        /* Loading state for tabs */
+        .tab.loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        .tab.loading i {
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Content Area */
+        .content {
+            min-height: 600px;
+        }
+        
+        /* Messages */
+        .messages {
+            margin: 20px 24px;
+        }
+        
+        .message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+        
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        .message.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+        
+        .message.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .tab {
+                padding: 16px 12px;
+                font-size: 14px;
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .tab i {
+                font-size: 18px;
+            }
+            
+            .tab span {
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .main-container {
+                border-radius: 8px;
+            }
+            
+            .tab {
+                padding: 12px 8px;
+                font-size: 12px;
+            }
+            
+            .tab i {
+                font-size: 16px;
+            }
+            
+            .tab span {
+                display: none;
+            }
+        }
+        
+        /* Loading States */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Focus states for accessibility */
+        .tab:focus {
+            outline: 2px solid rgba(255, 255, 255, 0.5);
+            outline-offset: -2px;
+        }
+        
+        /* High contrast mode support */
+        @media (prefers-contrast: high) {
+            .tab {
+                border: 1px solid transparent;
+            }
+            
+            .tab:focus,
+            .tab.active {
+                border-color: white;
+            }
+        }
+        
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            .tab,
+            .tab::after {
+                transition: none;
+                animation: none;
+            }
+        }
+        
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-1 { margin-bottom: 8px; }
+        .mb-2 { margin-bottom: 16px; }
+        .mb-3 { margin-bottom: 24px; }
+        .mt-0 { margin-top: 0; }
+        .mt-1 { margin-top: 8px; }
+        .mt-2 { margin-top: 16px; }
+        .mt-3 { margin-top: 24px; }
+        .p-0 { padding: 0; }
+        .p-1 { padding: 8px; }
+        .p-2 { padding: 16px; }
+        .p-3 { padding: 24px; }
+        .d-none { display: none; }
+        .d-block { display: block; }
+        .d-flex { display: flex; }
+        .justify-center { justify-content: center; }
+        .align-center { align-items: center; }
+        .gap-1 { gap: 8px; }
+        .gap-2 { gap: 16px; }
+        .gap-3 { gap: 24px; }
     </style>
     
+    <!-- Page Specific Styles -->
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="main-container">
+        <!-- Navigation Header -->
         <div class="header">
             <div class="tab-navigation">
-                <a href="{% url 'management:departemen_dashboard' %}" class="tab {% if request.resolver_match.url_name == 'departemen_dashboard' %}active{% endif %}">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
+                <a href="{% url 'management:nakes_profile' %}" class="tab" data-tab="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
                 </a>
-                <a href="{% url 'management:kelola_lamaran' %}" class="tab {% if request.resolver_match.url_name == 'kelola_lamaran' %}active{% endif %}">
-                    <i class="fas fa-inbox"></i>
-                    <span>Kelola Lamaran</span>
+                <a href="{% url 'management:cari_tugas' %}" class="tab" data-tab="cari-tugas">
+                    <i class="fas fa-search"></i>
+                    <span>Cari Tugas</span>
                 </a>
-                <a href="{% url 'management:kelola_shift' %}" class="tab {% if request.resolver_match.url_name == 'kelola_shift' %}active{% endif %}">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Kelola Shift</span>
+                <a href="{% url 'management:histori_kinerja' %}" class="tab" data-tab="histori">
+                    <i class="fas fa-history"></i>
+                    <span>Histori Kinerja</span>
                 </a>
-                <a href="{% url 'management:laporan_departemen' %}" class="tab {% if request.resolver_match.url_name == 'laporan_departemen' %}active{% endif %}">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Laporan</span>
-                </a>
-                <a href="{% url 'planning:dashboard' %}" class="tab {% if request.resolver_match.app_name == 'planning' %}active{% endif %}">
-                    <i class="fas fa-project-diagram"></i>
-                    <span>Perencanaan AI</span>
-                </a>
-                <a href="{% url 'billing:faskes_billing_dashboard' %}" class="tab {% if request.resolver_match.app_name == 'billing' %}active{% endif %}">
-                    <i class="fas fa-file-invoice-dollar"></i>
-                    <span>Billing</span>
-                </a>
-                 <a href="{% url 'authentication:logout' %}" class="tab" data-tab="logout">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
+                <a href="{% url 'management:evaluasi' %}" class="tab" data-tab="evaluasi">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Evaluasi</span>
                 </a>
             </div>
         </div>
 
+        <!-- Messages -->
         {% if messages %}
         <div class="messages">
             {% for message in messages %}
@@ -133,39 +357,201 @@
         </div>
         {% endif %}
 
+        <!-- Main Content -->
         <div class="content">
             {% block content %}{% endblock %}
         </div>
     </div>
 
+    <!-- Base JavaScript -->
     <script>
-        // (JavaScript yang sama seperti di management_base.html)
+        // Global utility functions
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function showNotification(message, type) {
+            // Remove existing notifications
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notification => {
+                notification.remove();
+            });
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 16px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 400px;
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                notification.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${message}`;
+            } else if (type === 'error') {
+                notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                notification.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>${message}`;
+            } else if (type === 'warning') {
+                notification.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                notification.innerHTML = `<i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>${message}`;
+            } else {
+                notification.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+                notification.innerHTML = `<i class="fas fa-info-circle" style="margin-right: 8px;"></i>${message}`;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Navigation functionality
         document.addEventListener('DOMContentLoaded', function() {
             const tabs = document.querySelectorAll('.tab');
             const currentPath = window.location.pathname;
             
+            // Set active tab based on current URL
             tabs.forEach(tab => {
                 tab.classList.remove('active');
                 const href = tab.getAttribute('href');
-                // Logika untuk active tab bisa lebih kompleks, misal memeriksa apakah currentPath.startsWith(href)
-                // Untuk 'planning' dan 'billing', kita bisa cek app_name dari resolver_match di template
-                if (href && currentPath.includes(href.split('/').pop()) && href !== "{% url 'authentication:logout' %}") {
-                    // Kasus khusus untuk dashboard, hanya aktif jika path tepat
-                    if (href === "{% url 'management:departemen_dashboard' %}" && currentPath === "{% url 'management:departemen_dashboard' %}") {
+                const tabData = tab.getAttribute('data-tab');
+                
+                // Check if current page matches this tab
+                if (href && href !== '#') {
+                    // More precise URL matching
+                    if (currentPath === href || 
+                        (href.includes('profile') && currentPath.includes('profile')) ||
+                        (href.includes('cari-tugas') && currentPath.includes('cari-tugas')) ||
+                        (href.includes('histori-kinerja') && currentPath.includes('histori-kinerja'))) {
                         tab.classList.add('active');
-                    } else if (href !== "{% url 'management:departemen_dashboard' %}" && currentPath.startsWith(href)) {
-                         // Untuk halaman lain, startsWith bisa cukup
-                         tab.classList.add('active');
+                    }
+                } else {
+                    // For placeholder links, check based on current path and tab data
+                    if (
+                        (currentPath.includes('profile') && tabData === 'profile') ||
+                        (currentPath.includes('cari-tugas') && tabData === 'cari-tugas') ||
+                        (currentPath.includes('histori-kinerja') && tabData === 'histori') ||
+                        (currentPath.includes('evaluasi') && tabData === 'evaluasi')
+                    ) {
+                        tab.classList.add('active');
                     }
                 }
             });
-            // Default ke dashboard jika tidak ada yang cocok (kecuali logout)
-            if (!document.querySelector('.tab.active') && !currentPath.includes('logout')) {
-                const dashboardTab = document.querySelector('.tab a[href="{% url 'management:departemen_dashboard' %}"]');
-                 if (dashboardTab) dashboardTab.closest('.tab').classList.add('active');
-            }
+            
+            // Handle navigation clicks
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    const tabData = this.getAttribute('data-tab');
+                    
+                    if (href === '#') {
+                        e.preventDefault();
+                        
+                        // Show different messages based on tab
+                        let message = 'Fitur ini akan segera tersedia';
+                        if (tabData === 'evaluasi') {
+                            message = 'Halaman Evaluasi sedang dalam pengembangan';
+                        }
+                        
+                        showNotification(message, 'info');
+                        
+                        // Optional: Add loading state simulation
+                        this.classList.add('loading');
+                        setTimeout(() => {
+                            this.classList.remove('loading');
+                        }, 1000);
+                        
+                        return false;
+                    }
+                    
+                    // For valid links, add loading state
+                    this.classList.add('loading');
+                });
+            });
+            
+            // Keyboard navigation support
+            document.addEventListener('keydown', function(e) {
+                // Alt + number to navigate to tabs
+                if (e.altKey && e.key >= '1' && e.key <= '4') {
+                    e.preventDefault();
+                    const tabIndex = parseInt(e.key) - 1;
+                    const targetTab = tabs[tabIndex];
+                    if (targetTab) {
+                        targetTab.click();
+                    }
+                }
+            });
+            
+            // Add visual feedback for keyboard users
+            tabs.forEach((tab, index) => {
+                tab.setAttribute('title', `Alt+${index + 1} untuk navigasi cepat`);
+            });
         });
+
+        // Function to update tab badges (for future notifications)
+        function updateTabBadge(tabData, count) {
+            const tab = document.querySelector(`[data-tab="${tabData}"]`);
+            if (tab) {
+                if (count > 0) {
+                    tab.setAttribute('data-badge', count > 99 ? '99+' : count.toString());
+                } else {
+                    tab.removeAttribute('data-badge');
+                }
+            }
+        }
+
+        // Function to set active tab programmatically
+        function setActiveTab(tabData) {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-tab') === tabData) {
+                    tab.classList.add('active');
+                }
+            });
+        }
+
+        // Export functions for use in other scripts
+        window.navigationUtils = {
+            updateTabBadge,
+            setActiveTab
+        };
     </script>
+
+    <!-- Page Specific JavaScript -->
     {% block extra_js %}{% endblock %}
 </body>
 </html>

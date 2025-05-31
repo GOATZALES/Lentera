@@ -146,8 +146,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark planning-navbar fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'planning:dashboard' %}">
-
-                Lentera
+                <i class="fas fa-chart-pie"></i> <!-- Ikon yang relevan dengan planning -->
+                Lentera Planning
                 {% if request.user.is_authenticated and request.user_role == 'departemen' and faskes_name %}
                     <span class="navbar-brand-faskes d-none d-lg-inline">- {{ faskes_name }}</span>
                 {% endif %}

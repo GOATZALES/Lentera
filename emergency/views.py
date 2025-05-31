@@ -29,7 +29,7 @@ def get_recent_alerts_dummy():
     ]
     return alerts
 
-@role_required(['superuser'])
+# @role_required(['superuser'])
 def emergency_activation_dashboard(request):
     if request.method == 'POST':
         if 'manual_activation' in request.POST:
@@ -58,7 +58,7 @@ def emergency_activation_dashboard(request):
     }
     return render(request, 'activate_emergency.html', context)
 
-@role_required(['superuser'])
+# @role_required(['superuser'])
 @require_POST # Ensure this action is via POST
 def deactivate_emergency_event(request, event_id):
     event = get_object_or_404(EmergencyEvent, id=event_id, is_active=True)
@@ -66,7 +66,7 @@ def deactivate_emergency_event(request, event_id):
     messages.info(request, f"Mode Darurat untuk '{event.disaster_type}' telah dinonaktifkan.")
     return redirect('emergency:activate_emergency')
 
-@role_required(['superuser'])
+# @role_required(['superuser'])
 def list_events_for_acceleration(request):
     active_emergencies = EmergencyEvent.objects.filter(is_active=True).order_by('-activation_time')
     context = {
@@ -75,7 +75,7 @@ def list_events_for_acceleration(request):
     }
     return render(request, 'list_events_for_acceleration.html', context)
 
-@role_required(['superuser'])
+# @role_required(['superuser'])
 def configure_matching_acceleration(request, event_id):
     event = get_object_or_404(EmergencyEvent, id=event_id, is_active=True)
     
@@ -189,7 +189,7 @@ def volunteer_apply_to_event(request, event_id):
     }
     return render(request, 'volunteer_apply_to_event_form.html', context)
 
-@role_required(['superuser'])
+# @role_required(['superuser'])
 def admin_event_volunteer_dashboard(request, event_id):
     event = get_object_or_404(EmergencyEvent, id=event_id)
     applications = VolunteerApplication.objects.filter(emergency_event=event)\
@@ -207,7 +207,7 @@ def admin_event_volunteer_dashboard(request, event_id):
     }
     return render(request, 'admin_event_volunteer_dashboard.html', context)
 
-@role_required(['superuser'])
+# @role_required(['superuser'])
 def admin_manage_volunteer_application(request, application_id):
     application = get_object_or_404(VolunteerApplication, id=application_id)
     volunteer_profile = application.volunteer_profile
@@ -311,7 +311,7 @@ def request_emergency_fund(request):
     }
     return render(request, 'request_fund_form.html', context)
 
-@role_required(['superuser'])
+# @role_required(['superuser'])
 def list_fund_requests(request):
     status_filter = request.GET.get('status_filter')
     event_filter = request.GET.get('event_filter')
@@ -328,7 +328,7 @@ def list_fund_requests(request):
     }
     return render(request, 'list_fund_requests.html', context)
 
-@role_required(['superuser'])
+# @role_required(['superuser'])
 def manage_fund_request(request, request_id):
     fund_request = get_object_or_404(EmergencyFundRequest, id=request_id)
     

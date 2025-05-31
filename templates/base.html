@@ -74,7 +74,7 @@
     {% endblock extra_head %}
 </head>
 
-<body class="bg-slate-100 antialiased"> {/* Latar lebih netral/cerah */ }
+<body class="bg-slate-100 antialiased"> 
     <nav x-data="{ open: false }" class="bg-gradient-to-r from-theme-blue-primary to-theme-blue-secondary shadow-lg sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -170,7 +170,7 @@
         </div>
     </nav>
 
-    <main class="pb-12 pt-4"> {/* Added pt-4 for spacing below fixed navbar */}
+    <main class="pb-12 pt-4"> 
         {% block content %}
         {% endblock %}
     </main>

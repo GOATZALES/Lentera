@@ -156,19 +156,9 @@
          {% if event.ai_pre_positioning_recommendations_text %}
             <p class="text-muted"><em>Saran alokasi sumber daya berdasarkan rekomendasi kebutuhan staf dan tingkat risiko regional akan ditampilkan di sini. Untuk saat ini, silakan merujuk pada detail "Rekomendasi Pre-Positioning & Staf".</em></p>
             <div class="recommendation-text mt-2">
-                <strong>Contoh Agregat Kebutuhan Staf (jika tersedia dari AI):</strong>
-                {% if event.ai_pre_positioning_recommendations_text %}
-                    {% for line in event.ai_pre_positioning_recommendations_text.splitlines %}
-                        {% if "Total Estimasi Kebutuhan Staf Tambahan" in line %}
-                            <p>{{ line }}</p>
-                            {% if forloop.counter < event.ai_pre_positioning_recommendations_text.splitlines|length %}
-                                <p>{{ event.ai_pre_positioning_recommendations_text.splitlines|slice:forloop.counter|first }}</p>
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                {% else %}
-                    <p>Tidak ada data.</p>
-                {% endif %}
+                <a href="{% url 'emergency:resource_tracking_dashboard' event_id=event.id %}" class="btn btn-lentera-primary">
+                    <i class="fas fa-route me-1"></i> Lacak Sumber Daya (Emergency)
+                </a>
             </div>
          {% else %}
             <p class="text-muted">Analisis AI belum dijalankan atau tidak menghasilkan saran alokasi sumber daya.</p>
