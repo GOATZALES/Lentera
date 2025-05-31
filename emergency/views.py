@@ -1,30 +1,20 @@
+import random
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required # Jika hanya admin yang bisa akses
 from django.contrib import messages
 from django.utils import timezone
 from .models import EmergencyEvent
-from .forms import EmergencyActivationForm
+from .forms import EmergencyActivationForm, MatchingAccelerationForm
 import datetime # untuk simulasi API
 
 # Dummy function untuk simulasi status API BNPB/BPBD
 def get_bnpb_api_status_dummy():
-    # Dalam implementasi nyata, ini akan memanggil API BNPB/BPBD
-    # dan mengembalikan status koneksi serta data terbaru.
-    # Untuk sekarang, kita buat dummy saja:
-    import random
-    connected = random.choice([True, True, False]) # Peluang lebih besar terhubung
-    if connected:
-        return {
-            "connected": True,
-            "last_sync": timezone.now() - datetime.timedelta(minutes=random.randint(5,60)),
-            "error_message": None
-        }
-    else:
-        return {
-            "connected": False,
-            "last_sync": None,
-            "error_message": "Gagal menghubungi server BNPB/BPBD."
-        }
+    return {
+        "connected": True,
+        "last_sync": timezone.now() - datetime.timedelta(minutes=random.randint(5,60)),
+        "error_message": None
+    }
+   
 
 # Dummy function untuk simulasi alert dari API
 def get_recent_alerts_dummy():
@@ -36,28 +26,7 @@ def get_recent_alerts_dummy():
     ]
     return alerts # Biasanya hanya tampilkan jika ada alert baru yang belum diproses
 
-# @login_required # Uncomment jika halaman ini butuh login
 def emergency_activation_dashboard(request):
-    # Simulasi deteksi otomatis dari API BNPB
-    # Di dunia nyata, ini bisa jadi background task yang memanggil API BNPB/BPBD
-    # Jika ada alert baru dengan severity tinggi, bisa otomatis membuat EmergencyEvent
-    # atau memberi notifikasi ke admin untuk aktivasi manual.
-    # Contoh:
-    # new_alerts = check_bnpb_api_for_critical_alerts()
-    # for alert_data in new_alerts:
-    #     if not EmergencyEvent.objects.filter(api_alert_details__id=alert_data['id'], is_active=True).exists():
-    #         event = EmergencyEvent(
-    #             disaster_type=alert_data['type'],
-    #             location_description=alert_data['location'],
-    #             severity_level=alert_data['severity'], # Asumsi API memberikan severity
-    #             affected_regions_input=", ".join(alert_data['regions']),
-    #             triggered_by_api=True,
-    #             api_alert_details=alert_data
-    #         )
-    #         event.activate(by_api=True, api_details=alert_data)
-    #         messages.info(request, f"Mode darurat otomatis diaktifkan untuk: {event.disaster_type} di {event.location_description}")
-
-
     if request.method == 'POST':
         if 'manual_activation' in request.POST: # Memastikan form manual yang disubmit
             form = EmergencyActivationForm(request.POST)
@@ -91,10 +60,38 @@ def emergency_activation_dashboard(request):
     }
     return render(request, 'activate_emergency.html', context)
 
-# @login_required
 def deactivate_emergency_event(request, event_id):
     if request.method == 'POST': # Hanya proses POST request untuk keamanan
         event = get_object_or_404(EmergencyEvent, id=event_id, is_active=True)
         event.deactivate()
         messages.info(request, f"Mode Darurat untuk '{event.disaster_type}' telah dinonaktifkan.")
     return redirect('emergency:activate_emergency')
+
+def list_events_for_acceleration(request):
+    active_emergencies = EmergencyEvent.objects.filter(is_active=True).order_by('-activation_time')
+    context = {
+        'active_emergencies': active_emergencies,
+        'page_title': "Konfigurasi Akselerasi Pencocokan Darurat"
+    }
+    return render(request, 'list_events_for_acceleration.html', context)
+
+def configure_matching_acceleration(request, event_id):
+    event = get_object_or_404(EmergencyEvent, id=event_id, is_active=True)
+    
+    if request.method == 'POST':
+        form = MatchingAccelerationForm(request.POST, instance=event)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Pengaturan akselerasi untuk '{event.disaster_type}' berhasil diperbarui.")
+            return redirect('emergency:list_events_for_acceleration')
+        else:
+            messages.error(request, "Gagal memperbarui pengaturan. Periksa isian form.")
+    else:
+        form = MatchingAccelerationForm(instance=event)
+
+    context = {
+        'form': form,
+        'event': event,
+        'page_title': f"Akselerasi untuk: {event.disaster_type}"
+    }
+    return render(request, 'configure_matching_acceleration.html', context)
