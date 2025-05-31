@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-xl">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-3">{{ page_title }}</h1>
+
+    {% include "_messages.html" %} {# Buat template _messages.html untuk menampilkan pesan Django #}
+
+    <p class="text-sm text-gray-700 mb-4">
+        Terima kasih atas kesediaan Anda untuk menjadi relawan. Silakan isi formulir di bawah ini dengan data yang benar.
+        Data Anda akan kami gunakan untuk koordinasi dan proses verifikasi.
+    </p>
+    <p class="text-sm text-gray-700 mb-6">
+        Sebelum mengisi, pastikan Anda telah membaca dan memahami <a href="{{ training_module_link }}" target="_blank" class="text-indigo-600 hover:text-indigo-800 underline font-medium">Modul Training Dasar Respons Bencana (klik di sini)</a>.
+    </p>
+
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+        
+        {% for field in form %}
+            {% if field.name != 'confirm_basic_training_read' %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ field.label }} {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                </label>
+                {{ field }} {# Asumsi styling via class 'form-input'/'form-textarea' di forms.py #}
+                {% if field.help_text %}
+                    <p class="mt-1 text-xs text-gray-500">{{ field.help_text|safe }}</p>
+                {% endif %}
+                {% for error in field.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endfor %}
+
+        {% if form.confirm_basic_training_read %}
+        <div class="pt-3">
+            <div class="flex items-start">
+                <div class="flex items-center h-5">
+                    {{ form.confirm_basic_training_read }}
+                </div>
+                <div class="ml-3 text-sm">
+                    <label for="{{ form.confirm_basic_training_read.id_for_label }}" class="font-medium text-gray-700">{{ form.confirm_basic_training_read.label }} <span class="text-red-500">*</span></label>
+                </div>
+            </div>
+            {% for error in form.confirm_basic_training_read.errors %}
+                <p class="text-red-500 text-xs mt-1 ml-8">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="flex justify-end pt-5 border-t">
+            <button type="submit" class="py-2.5 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Daftarkan Profil Saya
+            </button>
+        </div>
+    </form>
+     <p class="text-sm text-gray-600 mt-6 text-center">
+        Sudah punya profil? <a href="{% url 'emergency:volunteer_event_list' %}" class="text-indigo-600 hover:underline">Lihat daftar kejadian darurat.</a>
+    </p>
+</div>
+{% include "_form_styling.html" %} {# Buat template _form_styling.html untuk class CSS form #}
+{% endblock %}
