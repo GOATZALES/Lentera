@@ -35,7 +35,7 @@ def remove_initial_task_categories(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('emergency', '0003_taskcategory_volunteerprofile_volunteerapplication'), 
+        ('emergency', '0001_initial'), 
     ]
 
     operations = [

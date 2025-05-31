@@ -1,6 +1,10 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+
+from authentication.models import Faskes
+from lentera import settings
 
 class EmergencyEvent(models.Model):
     SEVERITY_LEVEL_CHOICES = [
@@ -166,3 +170,82 @@ class VolunteerApplication(models.Model):
         ordering = ['-application_date']
         verbose_name = "Aplikasi Relawan"
         verbose_name_plural = "Aplikasi Relawan"
+
+class EmergencyFundRequest(models.Model):
+    REQUEST_STATUS_CHOICES = [
+        ('PENDING', 'Menunggu Persetujuan'),
+        ('APPROVED', 'Disetujui'),
+        ('REJECTED', 'Ditolak'),
+        ('DISBURSED', 'Telah Dicairkan'),
+        ('REPORTED', 'Laporan Diterima'),
+    ]
+
+    # Pre-approved emergency fund levels
+    FUND_AMOUNT_CHOICES = [
+        (10000000, 'Rp 10.000.000'),
+        (25000000, 'Rp 25.000.000'),
+        (50000000, 'Rp 50.000.000'),
+        # Tambahkan level lain jika perlu
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    emergency_event = models.ForeignKey(
+        EmergencyEvent, 
+        on_delete=models.CASCADE, 
+        related_name='fund_requests',
+        help_text="Kejadian darurat terkait permintaan dana ini."
+    )
+    faskes = models.ForeignKey(
+        Faskes, 
+        on_delete=models.CASCADE, 
+        related_name='fund_requests',
+        help_text="Fasilitas Kesehatan yang mengajukan dana."
+    )
+    requested_amount = models.PositiveIntegerField(
+        choices=FUND_AMOUNT_CHOICES,
+        help_text="Jumlah dana darurat yang diajukan (sesuai level yang disetujui)."
+    )
+    purpose_description = models.TextField(
+        help_text="Deskripsi singkat tujuan penggunaan dana (mis: pembelian obat darurat, operasional ambulans, APD tambahan)."
+    )
+    
+    request_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=REQUEST_STATUS_CHOICES, default='PENDING')
+
+    # Admin Approval
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, blank=True, 
+        related_name='approved_fund_requests',
+        help_text="Admin yang menyetujui permintaan."
+    )
+    approval_date = models.DateTimeField(null=True, blank=True)
+    admin_notes = models.TextField(blank=True, null=True, help_text="Catatan dari admin terkait persetujuan/penolakan.")
+
+    # Disbursement
+    disbursement_date = models.DateTimeField(null=True, blank=True)
+    disbursement_proof = models.FileField(
+        upload_to='disbursement_proofs/', 
+        blank=True, null=True, 
+        help_text="Opsional: Bukti transfer atau pencairan dana."
+    ) # Perlu konfigurasi MEDIA_ROOT dan MEDIA_URL
+
+    # Reporting
+    spending_report_file = models.FileField(
+        upload_to='spending_reports/', 
+        blank=True, null=True, 
+        help_text="File laporan penggunaan dana (PDF, Excel, dll.)."
+    )
+    report_submission_date = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Permintaan Dana Rp {self.get_requested_amount_display()} oleh {self.faskes.nama_faskes} untuk {self.emergency_event.disaster_type}"
+
+    class Meta:
+        ordering = ['-request_date']
+        verbose_name = "Permintaan Dana Darurat"
+        verbose_name_plural = "Permintaan Dana Darurat"
