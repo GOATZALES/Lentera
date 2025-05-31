@@ -1,15 +1,19 @@
-# authentication/views.py - Auto Role Detection Login
+# authentication/views.py - Fixed Registration
 
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.http import JsonResponse
+from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.models import User
+from management.choices import KATEGORI_KUALIFIKASI_CHOICES
 from django.contrib.auth import authenticate, login, logout
 from django.core.exceptions import ValidationError, PermissionDenied
 from management.models import Nakes
 from .models import Departemen
-import json
+from .forms import UserRegisterForm, NakesRegistrationForm
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Helper to get role type without raising ValidationError for role_required decorator
 def get_user_role_type(user):
@@ -33,7 +37,6 @@ def get_user_role_type(user):
     return None
 
 def login_view(request):
-    
     if request.user.is_authenticated:
         return redirect_by_role(request.user)
     
@@ -111,38 +114,29 @@ def login_view(request):
     
     return render(request, 'login.html')
 
-def detect_user_role(user): # This version is for login flow, raises ValidationError
-    """
-    Detects user role. Returns "nakes" or "departemen".
-    Raises ValidationError if no specific role is found.
-    """
+def detect_user_role(user):
+    
+    # Check if user is Nakes
     try:
-        # Check Nakes first (example order)
-        nakes_instance = Nakes.objects.get(user=user)
-        # You might want to return nakes_instance.nama_lengkap or similar for message
-        return "Nakes" # Or a more descriptive name if used for messages
+        nakes = Nakes.objects.get(user=user)
+        return "nakes"
     except Nakes.DoesNotExist:
         pass
     
     try:
-        dept_instance = Departemen.objects.get(user=user)
-        # You might want to return dept_instance.nama_departemen for message
-        return dept_instance.nama_departemen # More specific for message
+        departemen = Departemen.objects.get(user=user)
+        return "departemen"
+    
     except Departemen.DoesNotExist:
         pass
     
-    # If superuser and no other role, treat as special case or deny login if specific role needed.
-    if user.is_superuser:
-        return "Superuser" # Or handle as an admin role
-
-    raise ValidationError("Peran pengguna tidak dikenali dalam sistem.")
-
+    raise ValidationError("User Tidak Ditemukan")
 
 def redirect_by_role(user):
     """
-    Redirect user based on their role.
+    Redirect user berdasarkan role mereka
     """
-    role_type = get_user_role_type(user) # Use the non-exception raising version here
+    role_info = detect_user_role(user)
     
     if role_type == "nakes":
         return redirect("management:nakes_dashboard") # Example: nakes_dashboard
@@ -163,20 +157,13 @@ def redirect_by_role(user):
 
 
 def logout_view(request):
+    """
+    Logout dengan pesan personal berdasarkan role
+    """
     user_name = None
     if request.user.is_authenticated:
-        display_name = request.user.get_full_name() or request.user.username
-        # More specific name if available
-        role_type = get_user_role_type(request.user)
-        if role_type == "departemen" and hasattr(request.user, 'departemen'):
-            display_name = request.user.departemen.nama_departemen
-        elif role_type == "nakes":
-            try:
-                nakes = Nakes.objects.get(user=request.user)
-                display_name = nakes.nama_lengkap # Assuming this field exists
-            except Nakes.DoesNotExist:
-                pass
-        user_name = display_name
+        role_info = detect_user_role(request.user)
+        user_name = role_info['name']
     
     logout(request) # Correct: logout takes request object
     
@@ -188,91 +175,70 @@ def logout_view(request):
     return redirect('authentication:login')
 
 
-# Decorator for role-based access control
+# Decorator untuk role-based access control
 def role_required(allowed_roles):
     """
-    Decorator to restrict access based on user role.
-    If 'departemen' is in allowed_roles, it attaches `request.departemen` (Departemen instance)
-    and `request.faskes` (Faskes instance) to the request object.
+    Decorator untuk membatasi akses berdasarkan role
+    
+    Usage:
+    @role_required(['nakes'])
+    def nakes_only_view(request):
+        pass
+    
+    @role_required(['departemen'])
+    def departemen_only_view(request):
+        pass
+    
+    @role_required(['nakes', 'departemen'])
+    def both_roles_view(request):
+        pass
     """
     def decorator(view_func):
         def _wrapped_view(request, *args, **kwargs):
             if not request.user.is_authenticated:
                 messages.error(request, 'Anda harus login terlebih dahulu.')
                 return redirect('authentication:login')
-
-            user_role = get_user_role_type(request.user)
-
-            # Superuser override: if 'superuser' is an allowed role and user is superuser, grant access.
-            # Or, if you want superusers to access everything, you can add: if user_role == 'superuser': pass
-            if user_role == 'superuser' and 'superuser' in allowed_roles:
-                 request.user_role = user_role
-                 # Superuser might not have a 'faskes' context unless specifically handled
-                 return view_func(request, *args, **kwargs)
-
-
-            if user_role not in allowed_roles:
-                messages.error(request, f'Akses ditolak. Halaman ini hanya untuk pengguna dengan peran: {", ".join(allowed_roles)}.')
-                # Redirect to their own dashboard if possible, or just login
-                # This requires a robust redirect_by_role that doesn't get into a loop
-                # For safety, redirect to login or a specific access_denied page.
-                return redirect('authentication:login') 
             
-            # If the role is 'departemen' and it's allowed, attach departemen and faskes instances
-            if user_role == 'departemen': # No need to check 'departemen' in allowed_roles again, already passed above
-                try:
-                    # Departemen.user is a OneToOneField, so request.user.departemen should exist
-                    departemen_instance = request.user.departemen
-                    request.departemen = departemen_instance 
-                    request.faskes = departemen_instance.faskes 
-                except Departemen.DoesNotExist: 
-                    messages.error(request, 'Profil departemen Anda tidak ditemukan. Silakan hubungi administrator.')
-                    return redirect('authentication:login')
+            role_info = detect_user_role(request.user)
             
-            request.user_role = user_role # For generic use in views if needed
+            if not request.user.departemen or not request.user.nakes:
+                messages.error(request, f'Akses ditolak. Halaman ini hanya untuk {", ".join(allowed_roles)}.')
+                return redirect_by_role(request.user)
+            
+            # Add role info to request for easy access in views
+            request.user_role_info = role_info
+            
             return view_func(request, *args, **kwargs)
         return _wrapped_view
     return decorator
 
-# Utility functions untuk views (No change needed for this request for get_user_context if planning uses request.faskes)
+# Utility functions untuk views
 def get_user_context(request):
     """
     Helper function untuk mendapatkan context user berdasarkan role
-    Note: This function re-detects role. For views using @role_required,
-    it's often better to use the role/context attached to the request by the decorator.
     """
-    # Prefer role set by decorator if available
-    if hasattr(request, 'user_role'):
-        role_info_str = request.user_role
-        if role_info_str == "departemen" and hasattr(request, 'departemen'):
-            return request.departemen
-        elif role_info_str == "nakes":
-            try: # Nakes instance might not be attached by role_required
-                return Nakes.objects.get(user=request.user)
-            except Nakes.DoesNotExist:
-                pass # Fall through to re-detection or error
-        # Add other roles if necessary
-    
-    # Fallback or if decorator didn't attach specific context object
-    try:
-        role_info_str = detect_user_role(request.user) # This can raise ValidationError
+    if hasattr(request, 'user_role_info'):
+        role_info = request.user_role_info
 
-        if role_info_str == "nakes" or (isinstance(role_info_str, str) and "Nakes" in role_info_str) : # Adjust based on detect_user_role output
+        if role_info == "nakes":
             nakes = Nakes.objects.get(user=request.user)
             return nakes
-        # For departemen, detect_user_role might return departemen name
-        elif hasattr(request.user, 'departemen'): # More robust check
+        elif role_info == "departemen":
             departemen = Departemen.objects.get(user=request.user)
             return departemen
-        # Handle superuser if get_user_context is expected to return something for them
-        elif role_info_str == "Superuser" and request.user.is_superuser:
-             return request.user # Or a specific superuser profile
 
-    except ValidationError:
-        # This implies user is authenticated but has no defined role in our system.
-        # This case should ideally be handled by redirecting to login or an error page.
-        # Raising PermissionDenied here if no context can be returned.
-        raise PermissionDenied("Tidak dapat menentukan konteks pengguna yang valid.")
+    else:
+        try:
+            role_info = detect_user_role(request.user)
+
+            if role_info == "nakes":
+                nakes = Nakes.objects.get(user=request.user)
+                return nakes
+            elif role_info == "departemen":
+                departemen = Departemen.objects.get(user=request.user)
+                return departemen
+
+        
+        except ValidationError:
+            raise ValidationError("authentication:login")
     
-    # Fallback if role detected but instance not fetched (should be rare with current logic)
-    raise PermissionDenied("Konteks pengguna tidak valid atau tidak ditemukan.")

@@ -1,206 +1,314 @@
-# management/views.py 
+# management/views.py - Complete version with all required functions
+
+import logging
 from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import transaction
-from django.utils import timezone
-from django.http import JsonResponse
-from django.contrib.auth.models import User
-
 from datetime import timedelta
 import json
 
-from authentication.views import get_user_context
-from .dummy import create_dummy_data
 from .models import Nakes, Shift, ShiftAssignment, Departemen, Faskes
 from .forms import NakesProfileForm, NakesAvailabilityForm
 from .choices import KATEGORI_KUALIFIKASI_CHOICES, PROFESI_CHOICES, STATUS_CHOICES, JENIS_KELAMIN_CHOICES
+from .dummy import create_dummy_data
+
+logger = logging.getLogger(__name__)
+
+# ===== UTILITY FUNCTIONS =====
 
 def get_current_nakes():
+    """Get current nakes - with fallback options"""
     try:
-        # Ambil Nakes yang namanya 'Budi Santoso' atau username 'nakes_histori_banyak'
+        # Try to get test user first
+        try:
+            user_to_load = User.objects.get(username='nakes_histori_banyak')
+            nakes = Nakes.objects.get(user=user_to_load)
+            logger.info(f"Found test nakes: {nakes.nama_lengkap}")
+            return nakes
+        except (User.DoesNotExist, Nakes.DoesNotExist):
+            logger.warning("Test nakes not found")
+        
+        # Try to get any nakes
+        nakes = Nakes.objects.first()
+        if nakes:
+            logger.info(f"Using first available nakes: {nakes.nama_lengkap}")
+            return nakes
+        
+        # Create dummy data as last resort
+        logger.info("Creating dummy data...")
+        create_dummy_data()
+        
+        # Try again after creating dummy data
         user_to_load = User.objects.get(username='nakes_histori_banyak')
         nakes = Nakes.objects.get(user=user_to_load)
+        logger.info(f"Created and found nakes: {nakes.nama_lengkap}")
         return nakes
-    except (User.DoesNotExist, Nakes.DoesNotExist, ValueError):
-        print("Nakes 'Budi Santoso' tidak ditemukan. Pastikan data dummy sudah dibuat.")
-        create_dummy_data()
-        nakes = get_current_nakes()
+        
+    except Exception as e:
+        logger.error(f"Failed to get current nakes: {e}", exc_info=True)
+        return None
 
-        return nakes
+# ===== TEST ENDPOINTS =====
 
+def test_api_connection(request):
+    """Simple test endpoint"""
+    try:
+        return JsonResponse({
+            'status': 'success',
+            'message': 'API connection working',
+            'method': request.method,
+            'path': request.path,
+            'timestamp': timezone.now().isoformat()
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        }, status=500)
 
-def nakes_profile_view(request):
-    nakes = get_user_context(request)
-    
-    if not nakes:
-        messages.error(request, "Nakes profile not found. Please ensure you are logged in.")
-        return redirect('authentication:login') # Redirect ke halaman lain jika nakes tidak ada
+def test_departemen_list(request):
+    """Test endpoint to list all departemen"""
+    try:
+        departemen_list = []
+        for dept in Departemen.objects.all()[:10]:  # Limit to 10
+            departemen_list.append({
+                'id': str(dept.departemen_id),
+                'nama': dept.nama_departemen,
+                'faskes': dept.faskes.nama_faskes if dept.faskes else 'No Faskes'
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'count': len(departemen_list),
+            'departemen': departemen_list
+        })
+    except Exception as e:
+        logger.error(f"Error in test_departemen_list: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        }, status=500)
 
-    if request.method == 'POST':
-        form = NakesProfileForm(request.POST, instance=nakes)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Profil berhasil diperbarui!")
-            return redirect('management:nakes_profile')
-        else:
-            messages.error(request, "Terdapat kesalahan saat memperbarui profil. Mohon cek input Anda.")
-    else:
-        form = NakesProfileForm(instance=nakes)
-    
-    # Form untuk ketersediaan
-    availability_form = NakesAvailabilityForm()
+@csrf_exempt
+def test_schedule_simple(request, departemen_id):
+    """Simplified schedule test"""
+    try:
+        # Check if departemen exists
+        try:
+            departemen = Departemen.objects.get(departemen_id=departemen_id)
+        except Departemen.DoesNotExist:
+            return JsonResponse({
+                'error': f'Departemen {departemen_id} not found'
+            }, status=404)
+        
+        # Get basic shift count
+        start_date = timezone.now().date()
+        end_date = start_date + timedelta(days=14)
+        
+        shift_count = Shift.objects.filter(
+            departemen=departemen,
+            is_active=True,
+            tanggal_shift__range=[start_date, end_date]
+        ).count()
+        
+        return JsonResponse({
+            'success': True,
+            'departemen': {
+                'id': str(departemen.departemen_id),
+                'nama': departemen.nama_departemen,
+                'faskes': departemen.faskes.nama_faskes if departemen.faskes else 'No Faskes'
+            },
+            'shift_count': shift_count,
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in test_schedule_simple: {e}")
+        return JsonResponse({
+            'error': f'Error: {str(e)}'
+        }, status=500)
 
-    context = {
-        'nakes': nakes,
-        'form': form,
-        'availability_form': availability_form,
-    }
-    return render(request, 'nakes_profile.html', context)
-
+# ===== MAIN VIEWS =====
 
 def cari_tugas_view(request):
-    """View untuk halaman cari tugas dengan tampilan faskes dan jadwal"""
-    nakes = get_current_nakes()
-    if not nakes:
-        messages.error(request, "Nakes profile not found.")
-        return redirect('management:nakes_profile')
-
-    # Ambil semua faskes yang memiliki shift yang cocok dengan profesi dan kualifikasi nakes
-    faskes_with_shifts = Faskes.objects.filter(
-        departemen__shifts__profesi=nakes.profesi,
-        departemen__shifts__kategori_kualifikasi=nakes.kategori_kualifikasi,
-        departemen__shifts__is_active=True,
-        departemen__shifts__is_completed_by_faskes=False,
-        departemen__shifts__tanggal_shift__gte=timezone.now().date()
-    ).distinct().prefetch_related('departemen')
-
-    # Struktur data untuk frontend
-    faskes_data = []
-    for faskes in faskes_with_shifts:
-        departemen_with_shifts = []
-        for departemen in faskes.departemen.all():
-            # Cek apakah departemen ini punya shift yang cocok
-            shift_count = departemen.shifts.filter(
-                profesi=nakes.profesi,
-                kategori_kualifikasi=nakes.kategori_kualifikasi,
-                is_active=True,
-                is_completed_by_faskes=False,
-                tanggal_shift__gte=timezone.now().date()
-            ).exclude(
-                assignments__nakes=nakes,
-                assignments__status_assignment__in=['Pending', 'Accepted', 'Clocked In', 'Completed']
-            ).count()
-            
-            if shift_count > 0:
-                departemen_with_shifts.append({
-                    'departemen': departemen,
-                    'shift_count': shift_count
-                })
-        
-        if departemen_with_shifts:
-            # Tambahkan informasi tipe faskes jika tidak ada
-            if not faskes.jenis_faskes:
-                if 'rumah sakit' in faskes.nama_faskes.lower() or 'rs' in faskes.nama_faskes.lower():
-                    faskes.jenis_faskes = 'Rumah Sakit'
-                elif 'puskesmas' in faskes.nama_faskes.lower():
-                    faskes.jenis_faskes = 'Puskesmas'
-                elif 'klinik' in faskes.nama_faskes.lower():
-                    faskes.jenis_faskes = 'Klinik'
-                else:
-                    faskes.jenis_faskes = 'Faskes'
-            
-            faskes_data.append({
-                'faskes': faskes,
-                'departemen_list': departemen_with_shifts
-            })
-
-    context = {
-        'nakes': nakes,
-        'faskes_data': faskes_data,
-    }
-    return render(request, 'cari_tugas.html', context)
-
-def get_departemen_schedule(request, departemen_id):
-    """AJAX endpoint untuk mendapatkan jadwal departemen"""
-    nakes = get_user_context(request)
-    if not nakes:
-        return JsonResponse({'error': 'Nakes not found'}, status=400)
-    
-    departemen = get_object_or_404(Departemen, departemen_id=departemen_id)
-    
-    # Ambil tanggal start (hari ini) dan end (2 minggu ke depan)
-    start_date = timezone.now().date()
-    end_date = start_date + timedelta(days=14)
-    
-    # Ambil semua shift yang tersedia di departemen ini
-    shifts = Shift.objects.filter(
-        departemen=departemen,
-        profesi=nakes.profesi,
-        kategori_kualifikasi=nakes.kategori_kualifikasi,
-        is_active=True,
-        is_completed_by_faskes=False,
-        tanggal_shift__range=[start_date, end_date]
-    ).exclude(
-        assignments__nakes=nakes,
-        assignments__status_assignment__in=['Pending', 'Accepted', 'Clocked In', 'Completed']
-    ).order_by('tanggal_shift', 'jam_mulai')
-    
-    # Format data untuk calendar
-    shifts_data = []
-    for shift in shifts:
-        shifts_data.append({
-            'shift_id': str(shift.shift_id),
-            'tanggal': shift.tanggal_shift.isoformat(),
-            'jam_mulai': shift.jam_mulai.strftime('%H:%M'),
-            'jam_selesai': shift.jam_selesai.strftime('%H:%M'),
-            'durasi_menit': shift.durasi_menit,
-            'deskripsi_tugas': shift.deskripsi_tugas or '',
-            'estimated_worth': shift.estimated_worth,
-        })
-    
-    return JsonResponse({
-        'departemen': {
-            'nama': departemen.nama_departemen,
-            'faskes': departemen.faskes.nama_faskes,
-        },
-        'shifts': shifts_data,
-        'date_range': {
-            'start': start_date.isoformat(),
-            'end': end_date.isoformat()
-        }
-    })
-
-def accept_shift_ajax(request, shift_id):
-    """AJAX endpoint untuk menerima shift"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
-    nakes = get_user_context(request)
-    if not nakes:
-        return JsonResponse({'error': 'Nakes not found'}, status=400)
-
-    shift = get_object_or_404(Shift, shift_id=shift_id)
-
-    # Pastikan shift masih aktif dan belum ada assignment untuk nakes ini
-    if not shift.is_active:
-        return JsonResponse({'error': 'Shift tidak aktif'}, status=400)
-    
-    if ShiftAssignment.objects.filter(
-        shift=shift, 
-        nakes=nakes, 
-        status_assignment__in=['Pending', 'Accepted', 'Clocked In', 'Completed']
-    ).exists():
-        return JsonResponse({'error': 'Anda sudah ditugaskan untuk shift ini'}, status=400)
+    """View untuk halaman cari tugas"""
+    logger.info("=== CARI TUGAS VIEW STARTED ===")
     
     try:
-        with transaction.atomic():
-            assignment = ShiftAssignment.objects.create(
-                shift=shift,
-                nakes=nakes,
-                status_assignment='Accepted',
-                waktu_nakes_menerima=timezone.now()
-            )
+        nakes = get_current_nakes()
+        if not nakes:
+            messages.error(request, "Nakes profile not found.")
+            return redirect('management:nakes_profile')
+        
+        logger.info(f"Nakes: {nakes.nama_lengkap}")
+        
+        # Get faskes with available shifts (simplified query)
+        faskes_with_shifts = Faskes.objects.filter(
+            departemen__shifts__is_active=True,
+            departemen__shifts__is_completed_by_faskes=False,
+            departemen__shifts__tanggal_shift__gte=timezone.now().date()
+        ).distinct().prefetch_related('departemen')
+
+        
+        logger.info(f"Found {faskes_with_shifts.count()} faskes with shifts")
+        
+        # Build faskes data
+        faskes_data = []
+        for faskes in faskes_with_shifts:
+            departemen_with_shifts = []
+            for departemen in faskes.departemen.all():
+                # Count shifts for this departemen (simplified)
+                shift_count = departemen.shifts.filter(
+                    is_active=True,
+                    is_completed_by_faskes=False,
+                    tanggal_shift__gte=timezone.now().date()
+                ).count()
+
+                print(shift_count)
+                
+                if shift_count > 0:
+                    departemen_with_shifts.append({
+                        'departemen': departemen,
+                        'shift_count': shift_count
+                    })
+            
+            if departemen_with_shifts:
+                # Set default tipe faskes
+                if not hasattr(faskes, 'tipe_faskes') or not faskes.tipe_faskes:
+                    faskes.tipe_faskes = 'Rumah Sakit'
+                
+                faskes_data.append({
+                    'faskes': faskes,
+                    'departemen_list': departemen_with_shifts
+                })
+        
+        context = {
+            'nakes': nakes,
+            'faskes_data': faskes_data,
+        }
+        
+        return render(request, 'cari_tugas.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error in cari_tugas_view: {e}", exc_info=True)
+        messages.error(request, f"Error loading page: {str(e)}")
+        return render(request, 'cari_tugas.html', {'nakes': None, 'faskes_data': []})
+
+@require_http_methods(["GET"])
+def get_departemen_schedule(request, departemen_id):
+    """AJAX endpoint untuk mendapatkan jadwal departemen"""
+    logger.info(f"=== GET DEPARTEMEN SCHEDULE: {departemen_id} ===")
+    
+    try:
+        # Get nakes
+        nakes = get_current_nakes()
+        if not nakes:
+            return JsonResponse({
+                'error': 'Nakes tidak ditemukan'
+            }, status=400)
+        
+        # Get departemen
+        try:
+            departemen = Departemen.objects.get(departemen_id=departemen_id)
+        except Departemen.DoesNotExist:
+            return JsonResponse({
+                'error': 'Departemen tidak ditemukan'
+            }, status=404)
+        
+        # Date range
+        start_date = timezone.now().date()
+        end_date = start_date + timedelta(days=14)
+        
+        # Get shifts (simplified query)
+        shifts = Shift.objects.filter(
+            departemen=departemen,
+            is_active=True,
+            is_completed_by_faskes=False,
+            tanggal_shift__range=[start_date, end_date]
+        ).order_by('tanggal_shift', 'jam_mulai')
+        
+        logger.info(f"Found {shifts.count()} shifts")
+        
+        # Format shifts data
+        shifts_data = []
+        for shift in shifts:
+            try:
+                shifts_data.append({
+                    'shift_id': str(shift.shift_id),
+                    'tanggal': shift.tanggal_shift.isoformat(),
+                    'jam_mulai': shift.jam_mulai.strftime('%H:%M') if shift.jam_mulai else '08:00',
+                    'jam_selesai': shift.jam_selesai.strftime('%H:%M') if shift.jam_selesai else '16:00',
+                    'durasi_menit': shift.durasi_menit or 480,
+                    'deskripsi_tugas': shift.deskripsi_tugas or f'Shift di {departemen.nama_departemen}',
+                    'estimated_worth': float(shift.estimated_worth or 500000),
+                })
+            except Exception as e:
+                logger.error(f"Error formatting shift {shift.shift_id}: {e}")
+                continue
+        
+        response_data = {
+            'success': True,
+            'departemen': {
+                'nama': departemen.nama_departemen,
+                'faskes': departemen.faskes.nama_faskes if departemen.faskes else 'Unknown Faskes',
+            },
+            'shifts': shifts_data,
+            'date_range': {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat()
+            }
+        }
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        logger.error(f"Error in get_departemen_schedule: {e}", exc_info=True)
+        return JsonResponse({
+            'error': f'Server error: {str(e)}'
+        }, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def accept_shift_ajax(request, shift_id):
+    """Accept shift endpoint"""
+    logger.info(f"=== ACCEPT SHIFT: {shift_id} ===")
+    
+    try:
+        nakes = get_current_nakes()
+        if not nakes:
+            return JsonResponse({'error': 'Nakes tidak ditemukan'}, status=400)
+
+        shift = get_object_or_404(Shift, shift_id=shift_id)
+
+        # Check availability
+        if not shift.is_active:
+            return JsonResponse({'error': 'Shift tidak aktif'}, status=400)
+        
+        # Check existing assignment
+        existing = ShiftAssignment.objects.filter(
+            shift=shift, 
+            nakes=nakes, 
+            status_assignment__in=['Pending', 'Accepted', 'Clocked In', 'Completed']
+        ).first()
+        
+        if existing:
+            return JsonResponse({'error': 'Anda sudah ditugaskan untuk shift ini'}, status=400)
+        
+        # Create assignment
+        assignment = ShiftAssignment.objects.create(
+            shift=shift,
+            nakes=nakes,
+            status_assignment='Accepted',
+            waktu_nakes_menerima=timezone.now()
+        )
         
         return JsonResponse({
             'success': True,
@@ -209,122 +317,65 @@ def accept_shift_ajax(request, shift_id):
         })
     
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-    
+        logger.error(f"Error accepting shift: {e}", exc_info=True)
+        return JsonResponse({'error': f'Error: {str(e)}'}, status=500)
+
+# ===== PROFILE VIEWS =====
 
 def nakes_profile_view(request):
-    """View untuk halaman profile nakes dengan layout horizontal"""
-    nakes = get_user_context(request)
+    """View untuk halaman profile nakes"""
+    nakes = get_current_nakes()
     if not nakes:
-        messages.error(request, "Nakes profile not found. Please ensure you are logged in.")
-        return redirect('some_other_page')
+        messages.error(request, "Nakes profile not found.")
+        return redirect('authentication:login')
 
     if request.method == 'POST':
         # Handle profile update
-        form_data = request.POST.copy()
-        
-        # Convert log availability to minutes if provided
-        if 'log_availability' in form_data:
-            try:
-                log_count = int(form_data['log_availability'])
-                minutes = log_count * 50  # 1 log = 50 menit
-                form_data['log_ketersediaan_menit'] = minutes
-            except (ValueError, TypeError):
-                pass
-        
-        # Handle multiple skills selection
-        selected_skills = request.POST.getlist('skills')
-        
-        # Update nakes instance
         try:
             with transaction.atomic():
                 # Update basic fields
-                nakes.nama_lengkap = form_data.get('nama_lengkap', nakes.nama_lengkap)
-                nakes.nomor_telepon = form_data.get('nomor_telepon', nakes.nomor_telepon)
-                nakes.alamat = form_data.get('alamat', nakes.alamat)
+                nakes.nama_lengkap = request.POST.get('nama_lengkap', nakes.nama_lengkap)
+                nakes.nomor_telepon = request.POST.get('nomor_telepon', nakes.nomor_telepon)
+                nakes.alamat = request.POST.get('alamat', nakes.alamat)
                 
-                if form_data.get('tanggal_lahir'):
-                    nakes.tanggal_lahir = form_data.get('tanggal_lahir')
+                if request.POST.get('tanggal_lahir'):
+                    nakes.tanggal_lahir = request.POST.get('tanggal_lahir')
                 
-                nakes.jenis_kelamin = form_data.get('jenis_kelamin', nakes.jenis_kelamin)
-                nakes.profesi = form_data.get('profesi', nakes.profesi)
-                nakes.status = form_data.get('status', nakes.status)
-                nakes.nomor_registrasi = form_data.get('nomor_registrasi', nakes.nomor_registrasi)
+                nakes.jenis_kelamin = request.POST.get('jenis_kelamin', nakes.jenis_kelamin)
+                nakes.profesi = request.POST.get('profesi', nakes.profesi)
+                nakes.status = request.POST.get('status', nakes.status)
+                nakes.nomor_registrasi = request.POST.get('nomor_registrasi', nakes.nomor_registrasi)
                 
-                if form_data.get('tahun_pengalaman'):
-                    nakes.tahun_pengalaman = int(form_data.get('tahun_pengalaman', nakes.tahun_pengalaman))
+                if request.POST.get('tahun_pengalaman'):
+                    nakes.tahun_pengalaman = int(request.POST.get('tahun_pengalaman', nakes.tahun_pengalaman))
                 
-                nakes.kategori_kualifikasi = form_data.get('kategori_kualifikasi', nakes.kategori_kualifikasi)
-                
-                if form_data.get('log_ketersediaan_menit'):
-                    nakes.log_ketersediaan_menit = int(form_data.get('log_ketersediaan_menit', nakes.log_ketersediaan_menit))
-                
+                nakes.kategori_kualifikasi = request.POST.get('kategori_kualifikasi', nakes.kategori_kualifikasi)
                 nakes.save()
-                
-                # Update skills
-                # First, clear all existing skills except the primary qualification
-                from .models import NakesSkill
-                NakesSkill.objects.filter(nakes=nakes).delete()
-                
-                # Add selected skills (excluding primary qualification to avoid duplication)
-                for skill_name in selected_skills:
-                    if skill_name != nakes.kategori_kualifikasi:
-                        nakes.add_skill(skill_name)
                 
                 messages.success(request, "Profil berhasil diperbarui!")
                 return redirect('management:nakes_profile')
         except Exception as e:
-            messages.error(request, f"Terjadi kesalahan saat memperbarui profil: {str(e)}")
+            messages.error(request, f"Terjadi kesalahan: {str(e)}")
     
-    # Get current skills for display
-    current_skills = list(nakes.skills.values_list('skill_name', flat=True))
-    if nakes.kategori_kualifikasi not in current_skills:
-        current_skills.append(nakes.kategori_kualifikasi)
-    
-    # Categorize skills for better display
-    skill_categories = {
-        'profesi_umum': [],
-        'spesialisasi': [],
-        'sertifikasi': [],
-        'manajemen': []
-    }
-    
-    for value, label in KATEGORI_KUALIFIKASI_CHOICES:
-        # Auto-categorize
-        if 'spesialis' in label.lower():
-            skill_categories['spesialisasi'].append((value, label))
-        elif any(cert in label.lower() for cert in ['bls', 'acls', 'btls', 'atls', 'sertifikasi', 'pelatihan', 'manajemen nyeri', 'k3', 'penanganan', 'pengendalian', 'komunikasi', 'bahasa']):
-            skill_categories['sertifikasi'].append((value, label))
-        elif any(mgmt in label.lower() for mgmt in ['manajemen', 'quality', 'edukator']):
-            skill_categories['manajemen'].append((value, label))
-        else:
-            skill_categories['profesi_umum'].append((value, label))
-    
-    # Prepare data for template
     context = {
         'nakes': nakes,
         'profesi_choices': PROFESI_CHOICES,
         'status_choices': STATUS_CHOICES,
         'jenis_kelamin_choices': JENIS_KELAMIN_CHOICES,
         'kategori_kualifikasi_choices': KATEGORI_KUALIFIKASI_CHOICES,
-        'skill_categories': skill_categories,
-        'current_skills': current_skills,
-        'current_log_count': nakes.log_ketersediaan_menit // 50 if nakes.log_ketersediaan_menit else 0,
-        'log_options': [(i, f"{i} Log ({i * 50} Menit)") for i in range(0, 21)],  # 0-20 logs
     }
     
     return render(request, 'nakes_profile.html', context)
 
+@csrf_exempt
+@require_http_methods(["POST"])
 def update_availability_ajax(request):
     """AJAX endpoint untuk update ketersediaan"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
-    nakes = get_user_context(request)
-    if not nakes:
-        return JsonResponse({'error': 'Nakes not found'}, status=400)
-    
     try:
+        nakes = get_current_nakes()
+        if not nakes:
+            return JsonResponse({'error': 'Nakes not found'}, status=400)
+        
         data = json.loads(request.body)
         log_count = int(data.get('log_count', 0))
         minutes = log_count * 50
@@ -339,20 +390,20 @@ def update_availability_ajax(request):
             'message': f'Ketersediaan diperbarui menjadi {log_count} log ({minutes} menit)'
         })
     
-    except (ValueError, TypeError ) as e:
-        return JsonResponse({'error': f'Invalid data: {str(e)}'}, status=400)
     except Exception as e:
+        logger.error(f"Error updating availability: {e}")
         return JsonResponse({'error': str(e)}, status=500)
-    
+
+# ===== HISTORY VIEWS =====
 
 def nakes_histori_kinerja_view(request):
     """View untuk halaman histori kinerja nakes"""
-    nakes = get_user_context(request)
+    nakes = get_current_nakes()
     if not nakes:
         messages.error(request, "Nakes profile not found.")
         return redirect('management:nakes_profile')
 
-    # Ambil semua assignment yang sudah completed dengan review
+    # Get completed assignments with reviews
     completed_assignments = ShiftAssignment.objects.filter(
         nakes=nakes,
         status_assignment='Completed'
@@ -363,14 +414,14 @@ def nakes_histori_kinerja_view(request):
         'review_faskes'
     ).order_by('-waktu_clock_out')
 
-    # Prepare data untuk template
+    # Prepare data for template
     histori_data = []
     total_shifts = 0
     total_rating = 0
     total_earnings = 0
 
     for assignment in completed_assignments:
-        # Ambil review jika ada
+        # Get review if exists
         review = getattr(assignment, 'review_faskes', None)
         
         # Calculate statistics
@@ -380,7 +431,7 @@ def nakes_histori_kinerja_view(request):
         if review:
             total_rating += review.rating_kinerja
 
-        # Format data untuk card
+        # Format data for display
         histori_item = {
             'assignment': assignment,
             'faskes_name': assignment.shift.departemen.faskes.nama_faskes,
@@ -399,14 +450,13 @@ def nakes_histori_kinerja_view(request):
     # Calculate average rating
     avg_rating = (total_rating / total_shifts) if total_shifts > 0 else 0
 
-    # Group by month for better organization
+    # Group by month
     from collections import defaultdict
     from datetime import datetime
     
     grouped_histori = defaultdict(list)
     for item in histori_data:
         month_key = item['tanggal_shift'].strftime('%Y-%m')
-        month_name = item['tanggal_shift'].strftime('%B %Y')
         grouped_histori[month_key].append(item)
     
     # Convert to list and sort by month
@@ -430,17 +480,14 @@ def nakes_histori_kinerja_view(request):
     
     return render(request, 'histori_kinerja.html', context)
 
-
-# Tambahkan ini ke management/views.py
-
 def nakes_evaluasi_view(request):
-    """View untuk halaman evaluasi kinerja nakes dengan tren chart dan rangkuman AI"""
+    """View untuk halaman evaluasi kinerja nakes"""
     nakes = get_current_nakes()
     if not nakes:
         messages.error(request, "Nakes profile not found.")
         return redirect('management:nakes_profile')
 
-    # Ambil semua assignment yang sudah completed dengan review
+    # Get completed assignments with reviews
     completed_assignments = ShiftAssignment.objects.filter(
         nakes=nakes,
         status_assignment='Completed'
@@ -451,7 +498,7 @@ def nakes_evaluasi_view(request):
         'review_faskes'
     ).order_by('-waktu_clock_out')
 
-    # Hitung statistik dasar
+    # Calculate statistics
     total_shifts = completed_assignments.count()
     total_hours = sum([assignment.shift.durasi_menit for assignment in completed_assignments]) / 60
     total_earnings = sum([float(assignment.total_bayaran_nakes or 0) for assignment in completed_assignments])
@@ -465,7 +512,7 @@ def nakes_evaluasi_view(request):
     else:
         avg_rating = 0
 
-    # Monthly performance data untuk line chart
+    # Monthly performance data
     from collections import defaultdict
     from datetime import datetime
     
@@ -480,13 +527,12 @@ def nakes_evaluasi_view(request):
             monthly_data[month_key]['total_rating'] += assignment.review_faskes.rating_kinerja
             monthly_data[month_key]['review_count'] += 1
     
-    # Convert to list dan sort berdasarkan bulan
+    # Convert to list
     monthly_performance = []
     for month_key in sorted(monthly_data.keys()):
         data = monthly_data[month_key]
-        avg_rating = data['total_rating'] / data['review_count'] if data['review_count'] > 0 else 0
+        avg_rating_month = data['total_rating'] / data['review_count'] if data['review_count'] > 0 else 0
         
-        # Convert month key to readable format
         month_name = datetime.strptime(month_key, '%Y-%m').strftime('%b %Y')
         
         monthly_performance.append({
@@ -494,10 +540,10 @@ def nakes_evaluasi_view(request):
             'month_key': month_key,
             'shifts': data['shifts'],
             'earnings': data['earnings'],
-            'avg_rating': round(avg_rating, 2)
+            'avg_rating': round(avg_rating_month, 2)
         })
 
-    # Kumpulkan semua komentar untuk dirangkum dengan AI
+    # Collect comments for AI summary
     all_comments = []
     for assignment in completed_assignments:
         if hasattr(assignment, 'review_faskes') and assignment.review_faskes.komentar:
@@ -509,18 +555,17 @@ def nakes_evaluasi_view(request):
                 'komentar': assignment.review_faskes.komentar
             })
 
-    # Generate AI summary dari komentar
+    # Generate AI summary
     ai_summary = None
     if all_comments:
         try:
-            from .management_ai_services import get_gemini_summary  # Import function untuk AI summary
+            from .management_ai_services import get_gemini_summary
             ai_summary = get_gemini_summary(all_comments, nakes.nama_lengkap)
         except Exception as e:
             logger.error(f"Error generating AI summary: {e}")
             ai_summary = None
 
-    # Recent performance trend (last 6 months)
-    from datetime import timedelta
+    # Recent performance (last 6 months)
     six_months_ago = timezone.now().date() - timedelta(days=180)
     
     recent_assignments = completed_assignments.filter(
@@ -544,7 +589,7 @@ def nakes_evaluasi_view(request):
         'total_earnings': total_earnings,
         'avg_rating': round(avg_rating, 1),
         'total_reviews': total_reviews,
-        'monthly_performance': monthly_performance[-12:],  # Last 12 months untuk chart
+        'monthly_performance': monthly_performance[-12:],  # Last 12 months
         'recent_performance': recent_performance,
         'ai_summary': ai_summary,
         'has_data': total_shifts > 0,
