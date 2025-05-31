@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-xl">
+    <h1 class="text-xl font-bold text-gray-800 mb-1">{{ page_title }}</h1>
+    <p class="text-sm text-gray-600 mb-5 border-b pb-3">Kejadian: <strong class="text-indigo-700">{{ event.disaster_type }}</strong> di {{ event.location_description }}</p>
+
+    {% include "_messages.html" %}
+
+    <div class="mb-5 p-3 bg-indigo-50 border border-indigo-200 rounded-md text-sm">
+        <p class="font-medium text-indigo-800">Anda mengajukan diri sebagai relawan:</p>
+        <ul class="list-disc list-inside ml-4 text-indigo-700">
+            <li>Nama: {{ volunteer_profile.full_name }}</li>
+            <li>Email: {{ volunteer_profile.email }}</li>
+            <li>Telepon: {{ volunteer_profile.phone_number }}</li>
+        </ul>
+        <p class="mt-1"><a href="{% url 'emergency:volunteer_registration' %}" class="text-xs text-indigo-600 hover:underline">(Perbarui Profil Jika Perlu)</a></p>
+    </div>
+
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+        
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                {{ form.task_categories_preference.label }} {% if form.task_categories_preference.field.required %}<span class="text-red-500">*</span>{% endif %}
+            </label>
+            <div class="space-y-1.5 p-3 border border-gray-200 rounded-md max-h-48 overflow-y-auto">
+            {% for choice in form.task_categories_preference %}
+                <div class="flex items-center">
+                    {{ choice.tag }} {# Ini render checkbox input #}
+                    <label for="{{ choice.id_for_label }}" class="ml-2.5 text-sm text-gray-700 hover:text-indigo-700 cursor-pointer">{{ choice.choice_label }}</label>
+                </div>
+            {% endfor %}
+            </div>
+            {% if form.task_categories_preference.help_text %}
+                <p class="mt-1 text-xs text-gray-500">{{ form.task_categories_preference.help_text|safe }}</p>
+            {% endif %}
+            {% for error in form.task_categories_preference.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <div>
+            <label for="{{ form.availability_notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                {{ form.availability_notes.label }} {% if form.availability_notes.field.required %}<span class="text-red-500">*</span>{% endif %}
+            </label>
+            {{ form.availability_notes }}
+            {% if form.availability_notes.help_text %}
+                <p class="mt-1 text-xs text-gray-500">{{ form.availability_notes.help_text|safe }}</p>
+            {% endif %}
+            {% for error in form.availability_notes.errors %}
+                <p class="text-red-500 text-xs mt-1">{{ error }}</p>
+            {% endfor %}
+        </div>
+
+        <div class="flex items-center justify-end pt-5 border-t space-x-3">
+             <a href="{% url 'emergency:volunteer_event_list' %}" class="py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                Batal
+            </a>
+            <button type="submit" class="py-2.5 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Kirim Pengajuan
+            </button>
+        </div>
+    </form>
+</div>
+{% include "_form_styling.html" %}
+<style>
+    /* Styling tambahan untuk checkbox list jika diperlukan */
+    input[type="checkbox"] {
+        @apply h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer;
+    }
+</style>
+{% endblock %}

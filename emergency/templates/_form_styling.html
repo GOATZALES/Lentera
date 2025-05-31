@@ -1,0 +1,12 @@
+<style>
+    .form-input, .form-textarea, .form-select {
+        @apply mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm;
+        @apply focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm;
+    }
+    .form-textarea {
+        min-height: 75px; /* Default tinggi textarea */
+    }
+    .form-checkbox { /* Jika ingin styling khusus untuk checkbox tunggal */
+        @apply h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500;
+    }
+</style>

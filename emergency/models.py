@@ -70,3 +70,99 @@ class EmergencyEvent(models.Model):
         ordering = ['-activation_time']
         verbose_name = "Kejadian Darurat"
         verbose_name_plural = "Kejadian Darurat"
+
+class TaskCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True, help_text="Contoh: Logistik, Administrasi, Transportasi, Dapur Umum")
+    description = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Kategori Tugas Relawan"
+        verbose_name_plural = "Kategori Tugas Relawan"
+        ordering = ['name']
+
+class VolunteerProfile(models.Model):
+    # Pilihan 1: Relawan adalah User Django (jika mereka perlu login)
+    # user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name="volunteer_profile")
+    
+    # Pilihan 2: Relawan mendaftar dengan email (tanpa login Django, lebih sederhana untuk awal)
+    full_name = models.CharField(max_length=150)
+    email = models.EmailField(unique=True, help_text="Email ini akan digunakan untuk komunikasi.")
+    phone_number = models.CharField(max_length=20, help_text="Nomor HP/WA aktif.")
+    address = models.TextField(blank=True, null=True, help_text="Alamat domisili saat ini.")
+    
+    # Basic screening
+    id_number = models.CharField(max_length=50, help_text="Nomor KTP/SIM/Identitas Lain (untuk verifikasi).", blank=True, null=True)
+    # id_document_scan = models.FileField(upload_to='volunteer_ids/', blank=True, null=True, help_text="Opsional: Upload scan KTP/SIM untuk verifikasi lebih lanjut.") # Jika ada fitur upload
+    emergency_contact_name = models.CharField(max_length=100, help_text="Nama kontak darurat.")
+    emergency_contact_phone = models.CharField(max_length=20, help_text="Nomor telepon kontak darurat.")
+    
+    # Simple training
+    has_completed_basic_training = models.BooleanField(
+        default=False, 
+        help_text="Konfirmasi telah membaca/menyelesaikan modul training dasar respons bencana (online 30 menit)."
+    )
+    skills_description = models.TextField(blank=True, null=True, help_text="Keahlian relevan (mis: menyetir, P3K dasar, memasak, entri data).")
+    
+    is_profile_verified_by_admin = models.BooleanField(default=False, help_text="Apakah profil relawan sudah diverifikasi oleh admin?")
+    admin_verification_notes = models.TextField(blank=True, null=True, help_text="Catatan internal admin terkait verifikasi profil.")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.full_name # or self.user.get_full_name() if self.user else self.email
+
+    class Meta:
+        verbose_name = "Profil Relawan"
+        verbose_name_plural = "Profil Relawan"
+        ordering = ['full_name']
+
+class VolunteerApplication(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING', 'Menunggu Review'),
+        ('APPROVED', 'Disetujui'), # Siap untuk dihubungi/ditempatkan
+        ('REJECTED', 'Ditolak'),
+        ('DEPLOYED', 'Sedang Bertugas'), # Sudah ditempatkan
+        ('COMPLETED', 'Selesai Bertugas'),
+        ('CANCELLED', 'Dibatalkan oleh Relawan'),
+    ]
+
+    emergency_event = models.ForeignKey(EmergencyEvent, on_delete=models.CASCADE, related_name='volunteer_applications')
+    volunteer_profile = models.ForeignKey(VolunteerProfile, on_delete=models.CASCADE, related_name='applications')
+    
+    # Relawan memilih satu atau lebih kategori tugas yang diminati
+    task_categories_preference = models.ManyToManyField(
+        TaskCategory, 
+        blank=True, 
+        help_text="Pilih satu atau lebih kategori tugas yang diminati."
+    )
+    
+    # Relawan bisa mengisi ketersediaan mereka
+    availability_notes = models.TextField(
+        blank=True, null=True, 
+        help_text="Contoh: Tersedia penuh mulai besok, atau hanya akhir pekan, atau setiap hari setelah jam 5 sore."
+    )
+
+    application_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    
+    # Untuk admin setelah approval/deployment
+    assigned_task_detail = models.TextField(blank=True, null=True, help_text="Detail tugas spesifik yang diberikan oleh admin.")
+    assigned_location_detail = models.CharField(max_length=255, blank=True, null=True, help_text="Detail lokasi penugasan spesifik (jika berbeda dari lokasi umum event).")
+    deployment_start_time = models.DateTimeField(null=True, blank=True)
+    deployment_end_time = models.DateTimeField(null=True, blank=True)
+    
+    admin_application_notes = models.TextField(blank=True, null=True, help_text="Catatan dari admin terkait aplikasi/penugasan ini.")
+
+    def __str__(self):
+        return f"Aplikasi {self.volunteer_profile.full_name} untuk {self.emergency_event.disaster_type}"
+
+    class Meta:
+        # Relawan hanya bisa apply sekali per event untuk menjaga integritas data
+        unique_together = ('emergency_event', 'volunteer_profile') 
+        ordering = ['-application_date']
+        verbose_name = "Aplikasi Relawan"
+        verbose_name_plural = "Aplikasi Relawan"
