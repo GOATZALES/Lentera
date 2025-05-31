@@ -10,19 +10,32 @@ from django.contrib.auth.models import User
 from datetime import timedelta
 import json
 
+from authentication.views import get_user_context
 from .dummy import create_dummy_data
 from .models import Nakes, Shift, ShiftAssignment, Departemen, Faskes
 from .forms import NakesProfileForm, NakesAvailabilityForm
 from .choices import KATEGORI_KUALIFIKASI_CHOICES, PROFESI_CHOICES, STATUS_CHOICES, JENIS_KELAMIN_CHOICES
 
+def get_current_nakes():
+    try:
+        # Ambil Nakes yang namanya 'Budi Santoso' atau username 'nakes_histori_banyak'
+        user_to_load = User.objects.get(username='nakes_histori_banyak')
+        nakes = Nakes.objects.get(user=user_to_load)
+        return nakes
+    except (User.DoesNotExist, Nakes.DoesNotExist, ValueError):
+        print("Nakes 'Budi Santoso' tidak ditemukan. Pastikan data dummy sudah dibuat.")
+        create_dummy_data()
+        nakes = get_current_nakes()
 
+        return nakes
 
 
 def nakes_profile_view(request):
-    nakes = get_current_nakes()
+    nakes = get_user_context(request)
+    
     if not nakes:
         messages.error(request, "Nakes profile not found. Please ensure you are logged in.")
-        return redirect('some_other_page') # Redirect ke halaman lain jika nakes tidak ada
+        return redirect('authentication:login') # Redirect ke halaman lain jika nakes tidak ada
 
     if request.method == 'POST':
         form = NakesProfileForm(request.POST, instance=nakes)
@@ -46,21 +59,9 @@ def nakes_profile_view(request):
     return render(request, 'nakes_profile.html', context)
 
 
-def get_current_nakes():
-    try:
-        # Ambil Nakes yang namanya 'Budi Santoso' atau username 'nakes_histori_banyak'
-        user_to_load = User.objects.get(username='nakes_histori_banyak')
-        nakes = Nakes.objects.get(user=user_to_load)
-        return nakes
-    except (User.DoesNotExist, Nakes.DoesNotExist):
-        print("Nakes 'Budi Santoso' tidak ditemukan. Pastikan data dummy sudah dibuat.")
-        create_dummy_data()
-        nakes = get_current_nakes()
-        return nakes
-
 def cari_tugas_view(request):
     """View untuk halaman cari tugas dengan tampilan faskes dan jadwal"""
-    nakes = get_current_nakes()
+    nakes = get_user_context(request)
     if not nakes:
         messages.error(request, "Nakes profile not found.")
         return redirect('management:nakes_profile')
@@ -122,7 +123,7 @@ def cari_tugas_view(request):
 
 def get_departemen_schedule(request, departemen_id):
     """AJAX endpoint untuk mendapatkan jadwal departemen"""
-    nakes = get_current_nakes()
+    nakes = get_user_context(request)
     if not nakes:
         return JsonResponse({'error': 'Nakes not found'}, status=400)
     
@@ -175,7 +176,7 @@ def accept_shift_ajax(request, shift_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
-    nakes = get_current_nakes()
+    nakes = get_user_context(request)
     if not nakes:
         return JsonResponse({'error': 'Nakes not found'}, status=400)
 
@@ -213,7 +214,7 @@ def accept_shift_ajax(request, shift_id):
 
 def nakes_profile_view(request):
     """View untuk halaman profile nakes dengan layout horizontal"""
-    nakes = get_current_nakes()
+    nakes = get_user_context(request)
     if not nakes:
         messages.error(request, "Nakes profile not found. Please ensure you are logged in.")
         return redirect('some_other_page')
@@ -319,7 +320,7 @@ def update_availability_ajax(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
-    nakes = get_current_nakes()
+    nakes = get_user_context(request)
     if not nakes:
         return JsonResponse({'error': 'Nakes not found'}, status=400)
     
@@ -346,7 +347,7 @@ def update_availability_ajax(request):
 
 def nakes_histori_kinerja_view(request):
     """View untuk halaman histori kinerja nakes"""
-    nakes = get_current_nakes()
+    nakes = get_user_context(request)
     if not nakes:
         messages.error(request, "Nakes profile not found.")
         return redirect('management:nakes_profile')
@@ -434,7 +435,7 @@ def nakes_histori_kinerja_view(request):
 
 def nakes_evaluasi_view(request):
     """View untuk halaman evaluasi kinerja nakes"""
-    nakes = get_current_nakes()
+    nakes = get_user_context(request)
     if not nakes:
         messages.error(request, "Nakes profile not found.")
         return redirect('management:nakes_profile')
