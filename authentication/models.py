@@ -11,8 +11,9 @@ class Faskes(models.Model):
     nomor_telepon = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     
-    # Mungkin ada user yang mengelola Faskes (misal: admin Faskes)
-    # admin_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='managed_faskes')
+    nomor_rekening_operasional = models.CharField(max_length=50, blank=True, null=True, help_text="Nomor rekening untuk pencairan dana darurat.")
+    nama_bank_operasional = models.CharField(max_length=100, blank=True, null=True, help_text="Nama bank rekening operasional.")
+    atas_nama_rekening_operasional = models.CharField(max_length=150, blank=True, null=True, help_text="Atas nama pada rekening operasional.")
 
     def __str__(self):
         return self.nama_faskes

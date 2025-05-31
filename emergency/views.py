@@ -1,3 +1,4 @@
+import json
 import random
 from django.db import IntegrityError
 from django.shortcuts import render, redirect, get_object_or_404
@@ -215,7 +216,7 @@ def volunteer_apply_to_event(request, event_id):
 
 # --- Views untuk Volunteer Coordination (Admin) ---
 
-@login_required # Pastikan hanya admin/staf yang bisa akses
+# @login_required # Pastikan hanya admin/staf yang bisa akses
 def admin_event_volunteer_dashboard(request, event_id):
     """Dashboard admin untuk melihat dan mengelola relawan per event."""
     event = get_object_or_404(EmergencyEvent, id=event_id)
@@ -275,3 +276,67 @@ def admin_manage_volunteer_application(request, application_id):
         'page_title': f"Kelola Relawan: {volunteer_profile.full_name} ({application.emergency_event.disaster_type})"
     }
     return render(request, 'admin_manage_volunteer_application.html', context)
+
+# @login_required # Pastikan hanya admin/staf yang bisa akses
+def resource_tracking_dashboard(request, event_id):
+    event = get_object_or_404(EmergencyEvent, id=event_id)
+
+    # 1. Deployed Professionals (Asumsi ada modelnya, misal DeployedProfessional)
+    # deployed_professionals = DeployedProfessional.objects.filter(emergency_event=event, is_active=True)
+    # Untuk contoh, kita buat data dummy:
+    deployed_professionals_data = [
+        {"id": 1, "name": "Dr. Budi Santoso", "role": "Dokter Umum", "location": "Posko Utama Banjarbaru", "last_check_in": "2024-03-15 10:00", "status_notes": "Sedang menangani pasien"},
+        {"id": 2, "name": "Suster Ani Wijaya", "role": "Perawat", "location": "RS Lapangan Martapura", "last_check_in": "2024-03-15 09:30", "status_notes": "Persiapan operasi minor"},
+    ]
+
+    # 2. Deployed Volunteers
+    deployed_volunteers = VolunteerApplication.objects.filter(
+        emergency_event=event, 
+        status='DEPLOYED' # Hanya yang statusnya DEPLOYED
+    ).select_related('volunteer_profile')
+
+    # 3. Data untuk Peta (titik acak di sekitar Kalimantan)
+    # Koordinat batas Kalimantan (kira-kira)
+    min_lat, max_lat = -4.2, 4.2  # Lintang Selatan ke Utara
+    min_lon, max_lon = 108.8, 119.0 # Bujur Barat ke Timur
+
+    map_personnel_points = []
+    # Dari profesional (dummy)
+    for i, prof in enumerate(deployed_professionals_data):
+        map_personnel_points.append({
+            "id": f"prof_{prof['id']}",
+            "lat": round(random.uniform(min_lat + 0.5, max_lat - 0.5), 6), # +0.5 / -0.5 agar tidak terlalu di pinggir
+            "lon": round(random.uniform(min_lon + 0.5, max_lon - 0.5), 6),
+            "type": "Profesional",
+            "name": prof["name"],
+            "role": prof["role"],
+            "location_desc": prof["location"],
+            "popup_html": f"<strong>{prof['name']}</strong><br>Peran: {prof['role']}<br>Lokasi: {prof['location']}"
+        })
+    # Dari relawan
+    for i, app in enumerate(deployed_volunteers):
+        map_personnel_points.append({
+            "id": f"vol_{app.id}",
+            "lat": round(random.uniform(min_lat + 0.5, max_lat - 0.5), 6),
+            "lon": round(random.uniform(min_lon + 0.5, max_lon - 0.5), 6),
+            "type": "Relawan",
+            "name": app.volunteer_profile.full_name,
+            "role": ", ".join([cat.name for cat in app.task_categories_preference.all()]) or "Belum ada peran spesifik",
+            "location_desc": app.assigned_location_detail or event.location_description,
+            "popup_html": f"<strong>{app.volunteer_profile.full_name}</strong> (Relawan)<br>Minat: {', '.join([cat.name for cat in app.task_categories_preference.all()]) or '-'}<br>Lokasi Tugas: {app.assigned_location_detail or event.location_description}"
+        })
+    
+    # 4. Communication Hub (Link Grup WhatsApp)
+    # Idealnya link ini disimpan per event atau konfigurasi global
+    whatsapp_group_link = "https://chat.whatsapp.com/CMFh9xo4MoiKCPwOZtkWNl" # Tambahkan field whatsapp_coordination_link di model EmergencyEvent jika perlu
+    # Pastikan Anda mengganti YOUR_DEFAULT_GROUP_INVITE_LINK dengan link invite grup WhatsApp yang sebenarnya.
+
+    context = {
+        'event': event,
+        'deployed_professionals': deployed_professionals_data, # Ganti dengan queryset asli jika ada
+        'deployed_volunteers': deployed_volunteers,
+        'map_personnel_points_json': json.dumps(map_personnel_points), # Kirim sebagai JSON string
+        'whatsapp_group_link': whatsapp_group_link,
+        'page_title': f"Pelacakan Sumber Daya: {event.disaster_type}"
+    }
+    return render(request, 'resource_tracking_dashboard.html', context)

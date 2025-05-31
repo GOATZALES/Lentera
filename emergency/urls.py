@@ -16,4 +16,5 @@ urlpatterns = [
     # Admin
     path('admin/event/<int:event_id>/volunteers/', admin_event_volunteer_dashboard, name='admin_event_volunteer_dashboard'),
     path('admin/volunteer-application/<int:application_id>/manage/', admin_manage_volunteer_application, name='admin_manage_volunteer_application'),
+    path('event/<int:event_id>/resource-tracking/', resource_tracking_dashboard, name='resource_tracking_dashboard'),
 ]
