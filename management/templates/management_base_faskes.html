@@ -326,25 +326,24 @@
         <!-- Navigation Header -->
         <div class="header">
             <div class="tab-navigation">
-                <a href="{% url 'management:departemen_dashboard' %}" class="tab">
-                    <i class="fas fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
+                <a href="{% url 'management:nakes_profile' %}" class="tab" data-tab="profile">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
                 </a>
-                <a href="{% url 'management:kelola_lamaran' %}" class="tab active">
-                    <i class="fas fa-inbox"></i>
-                    <span>Kelola Lamaran</span>
+                <a href="{% url 'management:cari_tugas' %}" class="tab" data-tab="cari-tugas">
+                    <i class="fas fa-search"></i>
+                    <span>Cari Tugas</span>
                 </a>
-                <a href="{% url 'management:kelola_shift' %}" class="tab">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span>Kelola Shift</span>
+                <a href="{% url 'management:histori_kinerja' %}" class="tab" data-tab="histori">
+                    <i class="fas fa-history"></i>
+                    <span>Histori Kinerja</span>
                 </a>
-                <a href="{% url 'management:laporan_departemen' %}" class="tab">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Laporan</span>
+                <a href="{% url 'management:evaluasi' %}" class="tab" data-tab="evaluasi">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Evaluasi</span>
                 </a>
             </div>
         </div>
-
 
         <!-- Messages -->
         {% if messages %}

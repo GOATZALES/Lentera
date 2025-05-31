@@ -1,12 +1,19 @@
 <style>
     .form-input, .form-textarea, .form-select {
         @apply mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm;
-        @apply focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm;
+        /* Updated focus to use theme-blue-primary */
+        @apply focus:outline-none focus:ring-theme-blue-primary focus:border-theme-blue-primary sm:text-sm;
     }
     .form-textarea {
         min-height: 75px; /* Default tinggi textarea */
     }
-    .form-checkbox { /* Jika ingin styling khusus untuk checkbox tunggal */
-        @apply h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500;
+    .form-checkbox { 
+        /* Updated checkbox color to theme-blue-primary */
+        @apply h-4 w-4 text-theme-blue-primary border-gray-300 rounded focus:ring-theme-blue-primary;
+    }
+    .form-input-file { /* Styling dasar untuk input file, bisa digunakan di form upload */
+        @apply block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold;
+        /* Menggunakan warna tema untuk tombol file */
+        @apply file:bg-theme-blue-primary/10 file:text-theme-blue-primary hover:file:bg-theme-blue-primary/20;
     }
 </style>

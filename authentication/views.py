@@ -1,5 +1,6 @@
 # authentication/views.py - Fixed Registration
 
+from functools import wraps
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -14,6 +15,26 @@ from .forms import UserRegisterForm, NakesRegistrationForm
 import logging
 
 logger = logging.getLogger(__name__)
+
+def get_user_role_type(user):
+    """
+    Determines the user's role.
+    Returns 'nakes', 'departemen', 'superuser', or None.
+    """
+    # Check for Departemen first as it's the target for planning
+    if hasattr(user, 'departemen'): # Accesses the related Departemen object via user.departemen
+        return "departemen"
+    # Check for Nakes (ensure Nakes model has OneToOneField to User, e.g., user.nakes_profile)
+    # For now, using the same logic as detect_user_role but without raising error
+    try:
+        Nakes.objects.get(user=user) # This confirms Nakes profile exists
+        return "nakes"
+    except Nakes.DoesNotExist:
+        pass
+    
+    if user.is_superuser:
+        return "superuser"
+    return None
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -63,17 +84,26 @@ def detect_user_role(user):
     return None
 
 def redirect_by_role(user):
-    """Redirect user berdasarkan role mereka"""
-    role_info = detect_user_role(user)
+    """
+    Redirect user based on their role.
+    """
+    role_type = get_user_role_type(user) # Use the non-exception raising version here
     
-    if role_info == "nakes":
-        return redirect("management:nakes_profile")
-    elif role_info == "departemen":
-        return redirect("management:departemen_dashboard")
+    if role_type == "nakes":
+        return redirect("management:nakes_dashboard") # Example: nakes_dashboard
+    elif role_type == "departemen":
+        return redirect("planning:dashboard") # Redirect Departemen to planning dashboard
+    elif role_type == "superuser":
+        # Superusers might go to admin or a specific superuser dashboard
+        return redirect("/admin/") # Or a custom superuser dashboard
     else:
-        # User tidak memiliki role valid, logout dan redirect ke login
-        logout(user)
-        messages.error(user, 'Akun Anda tidak memiliki role yang valid.')
+        # User has no valid role, logout and redirect to login with error
+        logout(user) # Pass the request object if logout requires it, or just user if settings allow
+        # Since this function is called with 'user' object, standard logout is request.user
+        # This path implies an issue, so a generic error is fine.
+        # messages.error(request, 'Akun Anda tidak memiliki peran yang valid.') # 'request' is not available here.
+        # This function should ideally be called from a view context where `request` is available
+        # For now, assume it redirects to login and login view shows message.
         return redirect('authentication:login')
 
 def logout_view(request):
@@ -205,24 +235,26 @@ def registration_success(request):
     })
 
 # Utility functions for role-based access
-def role_required(allowed_roles):
-    """Decorator untuk membatasi akses berdasarkan role"""
+def role_required(allowed_roles=[]):
     def decorator(view_func):
+        @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
-            if not request.user.is_authenticated:
-                messages.error(request, 'Anda harus login terlebih dahulu.')
-                return redirect('authentication:login')
+            user = request.user
+            if not user.is_authenticated:
+                return redirect('login')  # atau halaman unauthorized
+
+            if hasattr(user, 'departemen') and 'departemen' in allowed_roles:
+                request.departemen = user.departemen
+                request.faskes = user.departemen.faskes  # ← ini penting!
+                return view_func(request, *args, **kwargs)
             
-            role_info = detect_user_role(request.user)
-            
-            if role_info not in allowed_roles:
-                messages.error(request, f'Akses ditolak. Halaman ini hanya untuk {", ".join(allowed_roles)}.')
-                return redirect_by_role(request.user)
-            
-            # Add role info to request for easy access in views
-            request.user_role_info = role_info
-            
-            return view_func(request, *args, **kwargs)
+            elif hasattr(user, 'otherrole') and 'otherrole' in allowed_roles:
+                request.otherrole = user.otherrole
+                # set attribut lain jika perlu
+                return view_func(request, *args, **kwargs)
+
+            return redirect('unauthorized')  # misalnya: render 403
+
         return _wrapped_view
     return decorator
 

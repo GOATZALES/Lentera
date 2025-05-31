@@ -192,17 +192,13 @@ class EmergencyFundRequestForm(forms.ModelForm):
         label="Kejadian Darurat Terkait",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
-    faskes = forms.ModelChoiceField(
-        queryset=Faskes.objects.all().order_by('nama_faskes'), # Faskes yang mengajukan
-        label="Fasilitas Kesehatan Pengaju",
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
+    # Faskes field is removed, will be set in the view from request.faskes
 
     class Meta:
         model = EmergencyFundRequest
         fields = [
             'emergency_event', 
-            'faskes', 
+            # 'faskes', # Removed
             'requested_amount', 
             'purpose_description'
         ]
@@ -232,17 +228,22 @@ class EmergencyFundApprovalForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Batasi pilihan status hanya untuk PENDING, APPROVED, REJECTED saat approval awal
         # Status DISBURSED dan REPORTED di-handle terpisah
-        self.fields['status'].choices = [
+        current_status_choices = [
             ('PENDING', 'Menunggu Persetujuan'),
             ('APPROVED', 'Disetujui'),
             ('REJECTED', 'Ditolak'),
         ]
         if self.instance and self.instance.pk: # Jika sedang mengedit instance yang sudah ada
-             # Jika sudah approved, hanya bisa jadi disbursed, atau jika sudah disbursed bisa jadi reported
             if self.instance.status == 'APPROVED':
-                self.fields['status'].choices = [('APPROVED', 'Disetujui'), ('DISBURSED', 'Telah Dicairkan')]
+                current_status_choices = [('APPROVED', 'Disetujui'), ('DISBURSED', 'Telah Dicairkan')]
             elif self.instance.status == 'DISBURSED':
-                 self.fields['status'].choices = [('DISBURSED', 'Telah Dicairkan'), ('REPORTED', 'Laporan Diterima')]
+                 current_status_choices = [('DISBURSED', 'Telah Dicairkan'), ('REPORTED', 'Laporan Diterima')]
+            elif self.instance.status == 'REJECTED':
+                 current_status_choices = [('REJECTED', 'Ditolak')]
+            elif self.instance.status == 'REPORTED':
+                current_status_choices = [('REPORTED', 'Laporan Diterima')]
+        
+        self.fields['status'].choices = current_status_choices
 
 
 class FundDisbursementForm(forms.ModelForm):

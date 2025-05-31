@@ -1,6 +1,7 @@
 {% extends "base_planning.html" %}
 {% load humanize %}
 {% block title %}{{ page_title }} - Faskes {{ faskes_id }}{% endblock %}
+{% load planning_extras %}
 
 {% block extra_css %}
     {{ block.super }}
@@ -10,23 +11,40 @@
             border-radius: 0.5rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 .125rem .25rem rgba(0,0,0,.075);
+            transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+        }
+        .event-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.1);
         }
         .event-card-header {
-            background-color: #f8f9fa;
+            background-color: #eef2f7; /* Biru muda header card */
             padding: 0.75rem 1.25rem;
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid #d1d9e6; /* Border biru lebih gelap */
         }
-        .event-card-header h5 { margin-bottom: 0; font-size: 1.1rem; color: #495057;}
+        .event-card-header h5 { margin-bottom: 0; font-size: 1.1rem; color: var(--lentera-blue-primary); font-weight: 600;}
         .event-card-body { padding: 1.25rem; }
         .event-card-body p { margin-bottom: 0.5rem; color: #6c757d;}
         .event-card-body strong { color: #343a40; }
-        .level-critical { color: #dc3545; font-weight: bold; }
-        .level-high { color: #ffc107; font-weight: bold; }
-        .level-medium { color: #fd7e14; font-weight: bold; }
-        .level-low { color: #28a745; font-weight: bold; }
+        
+        /* Warna level risiko, bisa disesuaikan jika ingin lebih selaras dengan palet biru/hijau untuk low/medium */
+        .level-critical { color: #dc3545; font-weight: bold; } /* Merah untuk Kritis */
+        .level-high { color: #fd7e14; font-weight: bold; } /* Oranye untuk Tinggi */
+        .level-medium { color: #ffc107; font-weight: bold; } /* Kuning untuk Sedang */
+        .level-low { color: var(--lentera-green-primary); font-weight: bold; } /* Hijau untuk Rendah */
+        
         .btn-view-risk-detail {
-             background: linear-gradient(135deg, #6f42c1 0%, #4a148c 100%); /* Ungu gelap */
+             background: var(--secondary-gradient); /* Tombol hijau */
              color: white;
+             border: none;
+        }
+         .btn-view-risk-detail:hover {
+             opacity: 0.9;
+             color: white;
+        }
+        .page-header-title {
+            color: var(--lentera-blue-primary);
+            font-weight: 700;
         }
     </style>
 {% endblock %}
@@ -34,25 +52,17 @@
 {% block content_planning %}
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-        <h1 class="h2">{{ page_title }}</h1>
-        <!-- Mungkin ada tombol filter atau aksi global di sini -->
+        <h1 class="h2 page-header-title"><i class="fas fa-house-damage me-2"></i>{{ page_title }}</h1>
     </div>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
+    {% include "_messages.html" %} {# Menggunakan include untuk messages dari base_planning.html #}
 
     {% if active_disaster_events %}
         <p class="mb-3 text-muted">Berikut adalah kejadian darurat yang sedang aktif dan analisis risiko terkait:</p>
         <div class="row">
             {% for event in active_disaster_events %}
-            <div class="col-md-6 col-lg-4">
-                <div class="card event-card">
+            <div class="col-md-6 col-lg-4 d-flex align-items-stretch"> 
+                <div class="card event-card w-100"> 
                     <div class="card-header event-card-header">
                         <h5 class="card-title mb-0">
                             <i class="fas fa-biohazard me-2 
@@ -62,7 +72,7 @@
                             {{ event.disaster_type }}
                         </h5>
                     </div>
-                    <div class="card-body event-card-body">
+                    <div class="card-body event-card-body d-flex flex-column"> 
                         <p><strong>Lokasi:</strong> {{ event.location_description }}</p>
                         <p><strong>Level Keparahan:</strong> 
                             <span class="
@@ -75,11 +85,11 @@
                         </p>
                         <p><strong>Aktif Sejak:</strong> {{ event.activation_time|naturalday:"d M Y" }} ({{ event.activation_time|timesince }} lalu)</p>
                         {% if event.ai_pre_positioning_recommendations_text %}
-                            <p class="mt-2"><small class="text-success"><i class="fas fa-check-circle me-1"></i> Analisis AI Tersedia</small></p>
+                            <p class="mt-2"><small class="text-success"><i class="fas fa-check-circle me-1" style="color: var(--lentera-green-primary);"></i> Analisis AI Tersedia</small></p>
                         {% else %}
                             <p class="mt-2"><small class="text-warning"><i class="fas fa-hourglass-half me-1"></i> Analisis AI belum/tidak tersedia</small></p>
                         {% endif %}
-                        <a href="{% url 'planning:disaster_event_detail' event.id %}" class="btn btn-sm btn-view-risk-detail mt-2 w-100">
+                        <a href="{% url 'planning:disaster_event_detail' event.id %}" class="btn btn-sm btn-view-risk-detail mt-auto w-100"> 
                             <i class="fas fa-search-location me-1"></i> Lihat Detail & Rekomendasi
                         </a>
                     </div>
@@ -89,7 +99,7 @@
         </div>
     {% else %}
         <div class="text-center p-5 border rounded bg-light">
-            <i class="fas fa-shield-alt fa-3x text-muted mb-3"></i>
+            <i class="fas fa-shield-alt fa-3x text-muted mb-3" style="color: var(--lentera-blue-secondary) !important;"></i>
             <h4 class="text-muted">Tidak Ada Kejadian Darurat Aktif</h4>
             <p>Saat ini tidak ada kejadian darurat yang memerlukan perhatian khusus dari sisi perencanaan.</p>
         </div>

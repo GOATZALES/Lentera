@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}{{ page_title }} - Lentera Admin{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-xl">
+<div class="max-w-3xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-xl mt-6">
     <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-6 border-b pb-4">
         <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-purple-700">{{ page_title }}</h1>
+            <h1 class="text-xl sm:text-2xl font-bold text-theme-blue-primary">{{ page_title }}</h1>
             <p class="text-xs sm:text-sm text-gray-500">Kejadian: {{ application.emergency_event.disaster_type }}</p>
         </div>
-        <a href="{% url 'emergency:admin_event_volunteer_dashboard' application.emergency_event.id %}" class="mt-2 sm:mt-0 text-sm text-indigo-600 hover:underline">« Kembali ke Daftar Relawan Event</a>
+        <a href="{% url 'emergency:admin_event_volunteer_dashboard' application.emergency_event.id %}" class="mt-2 sm:mt-0 text-sm text-theme-blue-primary hover:underline">« Kembali ke Daftar Relawan Event</a>
     </div>
     
     {% include "_messages.html" %}
@@ -18,17 +18,17 @@
         <h3 class="text-lg font-semibold text-gray-800 mb-2">Profil Relawan</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
             <p><strong>Nama:</strong> {{ volunteer_profile.full_name }}</p>
-            <p><strong>Email:</strong> <a href="mailto:{{ volunteer_profile.email }}" class="text-indigo-600 hover:underline">{{ volunteer_profile.email }}</a></p>
-            <p><strong>Telepon:</strong> <a href="tel:{{ volunteer_profile.phone_number }}" class="text-indigo-600 hover:underline">{{ volunteer_profile.phone_number }}</a></p>
+            <p><strong>Email:</strong> <a href="mailto:{{ volunteer_profile.email }}" class="text-theme-blue-primary hover:underline">{{ volunteer_profile.email }}</a></p>
+            <p><strong>Telepon:</strong> <a href="tel:{{ volunteer_profile.phone_number }}" class="text-theme-blue-primary hover:underline">{{ volunteer_profile.phone_number }}</a></p>
             <p><strong>No. Identitas:</strong> {{ volunteer_profile.id_number|default:"-" }}</p>
             <div class="sm:col-span-2"><p><strong>Alamat:</strong> {{ volunteer_profile.address|default:"-" }}</p></div>
             <p><strong>Kontak Darurat:</strong> {{ volunteer_profile.emergency_contact_name }} ({{ volunteer_profile.emergency_contact_phone }})</p>
-            <p><strong>Training Dasar:</strong> <span class="font-medium {% if volunteer_profile.has_completed_basic_training %}text-green-600{% else %}text-red-600{% endif %}">{% if volunteer_profile.has_completed_basic_training %}Sudah Dilakukan{% else %}Belum Dilakukan{% endif %}</span></p>
+            <p><strong>Training Dasar:</strong> <span class="font-medium {% if volunteer_profile.has_completed_basic_training %}text-theme-green-primary{% else %}text-red-600{% endif %}">{% if volunteer_profile.has_completed_basic_training %}Sudah Dilakukan{% else %}Belum Dilakukan{% endif %}</span></p>
             <div class="sm:col-span-2"><p><strong>Keahlian:</strong> {{ volunteer_profile.skills_description|default:"-"|linebreaksbr }}</p></div>
             <div class="sm:col-span-2">
                 <p><strong>Minat Tugas (Aplikasi ini):</strong> 
                 {% for category in application.task_categories_preference.all %}
-                    <span class="inline-block bg-indigo-100 text-indigo-700 text-xs font-medium mr-1 px-1.5 py-0.5 rounded">{{ category.name }}</span>
+                    <span class="inline-block bg-theme-blue-primary/10 text-theme-blue-primary text-xs font-medium mr-1 px-1.5 py-0.5 rounded">{{ category.name }}</span>
                 {% empty %}<span class="italic text-gray-500">- Tidak ada -</span>{% endfor %}
                 </p>
             </div>
@@ -67,9 +67,9 @@
     </form>
 
     <!-- Form Update Status Aplikasi & Penugasan -->
-    <form method="post" class="p-4 border border-purple-300 bg-purple-50 rounded-lg">
+    <form method="post" class="p-4 border border-theme-blue-primary/30 bg-theme-blue-primary/5 rounded-lg">
         {% csrf_token %}
-        <h3 class="text-lg font-semibold text-purple-800 mb-3 pt-4 border-t border-purple-200 mt-4">Update Status Aplikasi & Penugasan</h3>
+        <h3 class="text-lg font-semibold text-theme-blue-primary mb-3 pt-4 border-t border-theme-blue-primary/20 mt-4">Update Status Aplikasi & Penugasan</h3>
         <div class="space-y-4">
             {% for field in app_form %}
             <div>
@@ -84,8 +84,8 @@
             </div>
             {% endfor %}
         </div>
-        <div class="flex justify-end pt-5 border-t border-purple-200 mt-5">
-            <button type="submit" name="submit_app_form" class="py-2.5 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+        <div class="flex justify-end pt-5 border-t border-theme-blue-primary/20 mt-5">
+            <button type="submit" name="submit_app_form" class="py-2.5 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-theme-green-primary to-theme-green-secondary hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme-green-primary">
                 Simpan Perubahan Aplikasi
             </button>
         </div>
@@ -93,10 +93,9 @@
 </div>
 {% include "_form_styling.html" %}
 <style>
-    /* Atur agar datetime-local punya ikon kalender yang terlihat (cross-browser mungkin perlu lebih) */
     input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-        background: url('data:image/svg+xml;utf8,<svg fill="%236B7280" height="1em" viewBox="0 0 16 16" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M14 2H2a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1V3a1 1 0 00-1-1zM2 1a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V3a2 2 0 00-2-2H2z"/><path fill-rule="evenodd" d="M3.5 0a.5.5 0 01.5.5V1h8V.5a.5.5 0 011 0V1h1a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V3a2 2 0 012-2h1V.5a.5.5 0 01.5-.5zM1 4v10a1 1 0 001 1h12a1 1 0 001-1V4H1z"/></svg>') no-repeat;
-        opacity: 0.6;
+        background: url('data:image/svg+xml;utf8,<svg fill="%234FA9FE" height="1em" viewBox="0 0 16 16" width="1em" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M14 2H2a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1V3a1 1 0 00-1-1zM2 1a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V3a2 2 0 00-2-2H2z"/><path fill-rule="evenodd" d="M3.5 0a.5.5 0 01.5.5V1h8V.5a.5.5 0 011 0V1h1a2 2 0 012 2v10a2 2 0 01-2 2H2a2 2 0 01-2-2V3a2 2 0 012-2h1V.5a.5.5 0 01.5-.5zM1 4v10a1 1 0 001 1h12a1 1 0 001-1V4H1z"/></svg>') no-repeat;
+        opacity: 0.7;
         cursor: pointer;
         padding: 0.1em;
     }

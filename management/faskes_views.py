@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 import json
 
 from authentication.models import Departemen, Faskes
+from management.dummy import create_dummy_data
 from .models import Nakes, Shift, ShiftAssignment, ReviewNakes, NakesSkill
 from .dummy import create_dummy_data
 

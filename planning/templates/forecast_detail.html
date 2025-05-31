@@ -1,12 +1,12 @@
 {% extends 'base_planning.html' %}
 {% load static %}
-{% load planning_extras %} {# Muat custom templatetag #}
+{% load planning_extras %} 
+{% load humanize %}
 
 {% block title %}Detail Forecast {{ forecast_log_id }} - Faskes {{ faskes_id }}{% endblock %}
 
 {% block extra_css %}
     {{ block.super }}
-    <!-- <link rel="stylesheet" href="{% static 'planning/css/planning_detail.css' %}"> -->
     <style>
         .planning-container { padding: 32px; }
         .planning-card {
@@ -14,45 +14,63 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.08); margin-bottom: 20px;
             border: 1px solid #e2e8f0;
         }
-        .planning-card h3, .planning-card h4 { color: #1e293b; font-weight: 600; margin-bottom: 1rem; }
-        .planning-card h3 { font-size: 1.5rem; }
-        .planning-card h4 { font-size: 1.1rem; }
+        .planning-card h3, .planning-card h4 { 
+            color: var(--lentera-blue-primary); /* Judul Biru */
+            font-weight: 600; margin-bottom: 1rem; 
+        }
+        .planning-card h3 { font-size: 1.5rem; padding-bottom: 0.5rem; border-bottom: 2px solid #eef2f7;}
+        .planning-card h4 { font-size: 1.1rem; margin-top: 1.25rem; }
         .planning-card p, .planning-card ul li { color: #475569; margin-bottom: 0.5rem; }
         .planning-card ul { list-style-type: none; padding-left: 0; }
+        .planning-card ul li strong { color: #2c5282; } /* Biru tua untuk label list */
+
         .planning-form-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: .5rem; display: block; }
         .planning-form-control {
-            display: block; width: 100%; padding: .75rem 1rem; font-size: 14px;
-            border: 2px solid #e5e7eb; border-radius: 8px;
+            display: block; width: 100%; padding: .65rem 1rem; font-size: 14px; /* Padding disesuaikan */
+            border: 1px solid #e5e7eb; border-radius: 8px;
         }
-        .planning-form-control:focus { border-color: #4facfe; outline: 0; box-shadow: 0 0 0 3px rgba(79,172,254,0.1); }
-        .planning-btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;
+        .planning-form-control:focus { 
+            border-color: var(--lentera-blue-primary); outline: 0; 
+            box-shadow: 0 0 0 3px rgba(79,172,254,0.2); 
+        }
+        .planning-btn-submit-feedback {
+            background: var(--secondary-gradient); /* Tombol Kirim Hijau */
+            color: white;
             padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600;
         }
-        .planning-btn-secondary {
-            background: #f1f5f9; color: #64748b;
-            padding: 10px 20px; border: none; border-radius: 8px; font-weight: 600;
+        .planning-btn-submit-feedback:hover { opacity:0.9; }
+        
+        .planning-btn-back {
+            background-color: #6c757d; /* Abu-abu untuk kembali */
+            color: white;
         }
-         .alert-planning { padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+         .planning-btn-back:hover { background-color: #5a6268; color:white; }
+
+        .alert-planning { padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
         .alert-planning.danger { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
         .alert-planning.warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
-        .feedback-icon { color: #4facfe; margin-right: 8px; }
+        
+        .feedback-icon { color: var(--lentera-blue-secondary); margin-right: 8px; } /* Icon Biru Muda */
+        .page-title-header { text-align: center; margin-bottom: 30px;}
+        .page-title-header h1 { font-size: 24px; color: var(--lentera-blue-primary); font-weight: 700;}
     </style>
 {% endblock %}
 
 {% block content_planning %}
 <div class="planning-container">
-    <div class="profile-header" style="text-align: center; margin-bottom: 30px;">
-        <h1 class="profile-name" style="font-size: 24px;">Detail Forecast (ID Log AI: {{ forecast_log_id }})</h1>
+    <div class="page-title-header">
+        <h1>Detail Forecast (ID Log AI: {{ forecast_log_id }})</h1>
     </div>
 
+    {% include "_messages.html" %} {# Menggunakan include dari base_planning.html #}
+
     {% if error_message %}
-        <div class="alert-planning danger">{{ error_message }}</div>
+        <div class="alert-planning danger"><i class="fas fa-times-circle me-1"></i>{{ error_message }}</div>
     {% elif not forecast_detail %}
         <p class="text-center">Data forecast tidak ditemukan.</p>
     {% else %}
         <div class="planning-card">
-            <h3>Informasi Permintaan</h3>
+            <h3><i class="fas fa-info-circle feedback-icon"></i>Informasi Permintaan</h3>
             <p><strong>Faskes ID:</strong> {{ forecast_detail.caller_reference_id }}</p>
             <p><strong>Periode:</strong> {{ forecast_detail.input_payload_json.period_start }} s/d {{ forecast_detail.input_payload_json.period_end }}</p>
             <p><strong>Diminta Pada:</strong> {{ forecast_detail.requested_at|date:"d M Y, H:i" }}</p>
@@ -70,13 +88,13 @@
                         <li>Tidak ada prediksi staf.</li>
                     {% endfor %}
                 </ul>
-                <h4>Estimasi Biaya (Rp):</h4>
+                <h4 class="mt-3">Estimasi Biaya (Rp):</h4>
                 <p>
-                    Min: {{ forecast_detail.parsed_ai_output_json.estimated_cost_range_rp.min_cost|floatformat:0|default:"N/A" }} - 
-                    Max: {{ forecast_detail.parsed_ai_output_json.estimated_cost_range_rp.max_cost|floatformat:0|default:"N/A" }}
+                    Min: <strong style="color: var(--lentera-green-primary);">{{ forecast_detail.parsed_ai_output_json.estimated_cost_range_rp.min_cost|floatformat:0|intcomma|default:"N/A" }}</strong> - 
+                    Max: <strong style="color: #E53E3E;">{{ forecast_detail.parsed_ai_output_json.estimated_cost_range_rp.max_cost|floatformat:0|intcomma|default:"N/A" }}</strong>
                 </p>
-                <h4>Alert & Rekomendasi:</h4>
-                <p>{{ forecast_detail.parsed_ai_output_json.peak_period_alerts_and_recommendations|default:"Tidak ada."|linebreaksbr }}</p>
+                <h4 class="mt-3">Alert & Rekomendasi:</h4>
+                <p class="p-2 bg-light border rounded">{{ forecast_detail.parsed_ai_output_json.peak_period_alerts_and_recommendations|default:"Tidak ada."|linebreaksbr }}</p>
             {% else %}
                 <p class="text-warning">Output AI tidak tersedia atau gagal diparsing.</p>
             {% endif %}
@@ -87,7 +105,7 @@
             {% with feedback=forecast_detail.feedback_info %}
                 {% if feedback and feedback.feedback_log_id %}
                     <p><strong>Feedback Terakhir Diberikan:</strong> {{ feedback.feedback_provided_at|date:"d M Y, H:i" }}</p>
-                    <h4>Data Aktual yang Dilaporkan:</h4>
+                    <h4 class="mt-3">Data Aktual yang Dilaporkan:</h4>
                     {% if feedback.actual_data_json.staffing %}
                     <ul>
                         {% for role, count in feedback.actual_data_json.staffing.items %}
@@ -100,11 +118,19 @@
                     <p>Belum ada data aktual staffing yang dilaporkan.</p>
                     {% endif %}
 
-                    <h4>Skor Akurasi:</h4>
-                    <p><strong>Keseluruhan:</strong> {{ feedback.overall_accuracy_score|default_if_none:"N/A" }}%</p>
+                    <h4 class="mt-3">Skor Akurasi:</h4>
+                    <p><strong>Keseluruhan:</strong> 
+                        <span class="badge 
+                            {% if feedback.overall_accuracy_score is None %}bg-secondary
+                            {% elif feedback.overall_accuracy_score >= 75 %}bg-success
+                            {% elif feedback.overall_accuracy_score >= 50 %}bg-warning text-dark
+                            {% else %}bg-danger{% endif %}">
+                            {{ feedback.overall_accuracy_score|default_if_none:"N/A" }}{% if feedback.overall_accuracy_score is not None %}%{% endif %}
+                        </span>
+                    </p>
                     {% if feedback.accuracy_metrics_json and feedback.accuracy_metrics_json.error is None %}
-                        <h5>Detail per Role:</h5>
-                        <ul>
+                        <h5 class="mt-2" style="font-size:1rem; color: var(--lentera-blue-primary);">Detail per Role:</h5>
+                        <ul class="small">
                         {% for role, metrics in feedback.accuracy_metrics_json.items %}
                             <li><strong>{{ role }}:</strong> 
                                 Prediksi={{ metrics.predicted|default_if_none:0 }}, Aktual={{ metrics.actual|default_if_none:0 }}. 
@@ -115,8 +141,9 @@
                     {% elif feedback.accuracy_metrics_json.error %}
                         <p class="text-danger">Error perhitungan akurasi: {{ feedback.accuracy_metrics_json.error }}</p>
                     {% endif %}
-                    <p><strong>Catatan Feedback:</strong> {{ feedback.qualitative_feedback|default:"Tidak ada catatan."|linebreaksbr }}</p>
-                    <hr>
+                    <p class="mt-2"><strong>Catatan Feedback:</strong></p>
+                    <p class="p-2 bg-light border rounded">{{ feedback.qualitative_feedback|default:"Tidak ada catatan."|linebreaksbr }}</p>
+                    <hr class="my-3">
                     <p>Anda bisa memperbarui feedback di bawah ini:</p>
                 {% else %}
                     <p>Belum ada feedback yang diberikan untuk forecast ini.</p>
@@ -126,20 +153,20 @@
             <h4 class="mt-3">Form Input Data Aktual & Feedback</h4>
             <form method="POST" action="{% url 'planning:submit_actual_data' forecast_log_id=forecast_log_id %}">
                 {% csrf_token %}
-                <p>Masukkan jumlah staf aktual untuk periode forecast ini:</p>
+                <p class="mb-2">Masukkan jumlah staf aktual untuk periode forecast ini:</p>
                 {% if forecast_detail.parsed_ai_output_json.predicted_staffing_demand %}
+                    <div class="row">
                     {% for role, predicted_count in forecast_detail.parsed_ai_output_json.predicted_staffing_demand.items %}
-                        <div class="row mb-2 align-items-center">
-                            <label for="actual_{{ role|safe_slugify }}" class="col-sm-4 col-md-3 planning-form-label">Aktual {{ role }}:</label>
-                            <div class="col-sm-8 col-md-4">
-                                <input type="number" class="planning-form-control form-control-sm" 
-                                    id="actual_{{ role|safe_slugify }}"
-                                    name="actual_{{ role|safe_slugify }}" {# Nama field harus konsisten dengan view #}
-                                    value="{{ actual_staffing_json_for_template|get_item:role|default_if_none:'' }}" 
-                                    min="0" placeholder="Prediksi: {{ predicted_count }}">
-                            </div>
+                        <div class="col-md-6 mb-2">
+                            <label for="actual_{{ role|safe_slugify }}" class="planning-form-label">Aktual {{ role }}:</label>
+                            <input type="number" class="planning-form-control form-control-sm" 
+                                id="actual_{{ role|safe_slugify }}"
+                                name="actual_{{ role|safe_slugify }}"
+                                value="{{ actual_staffing_json_for_template|get_item:role|default_if_none:'' }}" 
+                                min="0" placeholder="Prediksi: {{ predicted_count }}">
                         </div>
                     {% endfor %}
+                    </div>
                 {% else %}
                     <p class="text-muted">Tidak ada prediksi staf dari AI untuk dijadikan acuan input.</p>
                 {% endif %}
@@ -147,42 +174,35 @@
                 <div class="mt-3">
                     <label for="qualitative_feedback" class="planning-form-label">Catatan Feedback Kualitatif (Opsional):</label>
                     <textarea class="planning-form-control" id="qualitative_feedback" name="qualitative_feedback" rows="3">{{ qualitative_feedback_for_template }}</textarea>
-                    <small class="form-text text-muted">Misalnya: "Prediksi dokter umum cukup akurat, tapi perawat kurang dari kebutuhan sebenarnya."</small>
+                    <small class="form-text text-muted">Misalnya: "Prediksi dokter umum cukup akurat, tapi perawat kurang."</small>
                 </div>
-                <button type="submit" class="btn planning-btn-success mt-3"><i class="fas fa-paper-plane"></i> Kirim Data Aktual & Feedback</button>
+                <button type="submit" class="btn planning-btn-submit-feedback mt-3"><i class="fas fa-paper-plane me-2"></i> Kirim Data Aktual & Feedback</button>
             </form>
         </div>
-    {% endif %} {# end if forecast_detail #}
-    <hr>
-    <a href="{% url 'planning:dashboard' %}" class="btn planning-btn-secondary mt-3"><i class="fas fa-arrow-left"></i> Kembali ke Dashboard</a>
+    {% endif %} 
+    <hr class="my-4">
+    <a href="{% url 'planning:dashboard' %}" class="btn planning-btn-back mt-3"><i class="fas fa-arrow-left me-2"></i> Kembali ke Dashboard</a>
 </div>
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_js_planning %}
 {{ block.super }}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Untuk prefill form feedback jika data sudah ada
     const actualStaffingJson = '{{ actual_staffing_json_for_template|safe|escapejs }}';
     try {
         const actualStaffingData = JSON.parse(actualStaffingJson);
         for (const role in actualStaffingData) {
             if (actualStaffingData.hasOwnProperty(role)) {
-                // Perlu slugify role agar cocok dengan ID/name elemen input
-                // Fungsi slugify sederhana, bisa disesuaikan atau pakai dari Django di view
-                const slugRole = role.toLowerCase()
-                                     .replace(/\s+/g, '_')       // Ganti spasi dengan _
-                                     .replace(/[^\w-]+/g, ''); // Hapus karakter non-alphanumeric kecuali _ dan -
+                const slugRole = role.toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '');
                 const inputElement = document.getElementById('actual_' + slugRole) || document.getElementsByName('actual_' + slugRole)[0];
                 if (inputElement) {
                     inputElement.value = actualStaffingData[role];
-                } else {
-                    // console.warn("Input element not found for role:", role, " Slug:", 'actual_' + slugRole);
                 }
             }
         }
     } catch(e) {
-        console.error("Error parsing actual_staffing_json_for_template for prefill:", e, actualStaffingJson);
+        console.error("Error parsing actual_staffing_json_for_template for prefill:", e);
     }
 });
 </script>
