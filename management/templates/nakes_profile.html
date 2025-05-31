@@ -1,0 +1,374 @@
+{% extends 'templates/management_base.html' %}
+
+{% load static %}
+
+
+{% block title %}Profile - {{ nakes.nama_lengkap }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}"/>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <i class="fas fa-user-md"></i>
+        </div>
+        <div class="profile-name">{{ nakes.nama_lengkap }}</div>
+        <div class="profile-profession">
+            <i class="fas fa-stethoscope"></i>
+            {{ nakes.profesi }} - {{ nakes.kategori_kualifikasi }}
+            <span class="status-badge">{{ nakes.status }}</span>
+        </div>
+    </div>
+
+    <!-- Profile Form -->
+    <form method="post" id="profileForm">
+        {% csrf_token %}
+        <div class="profile-form">
+            <!-- Personal Information -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-user"></i>
+                    Informasi Pribadi
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-signature"></i>
+                            Nama Lengkap
+                        </label>
+                        <input type="text" name="nama_lengkap" class="form-input" value="{{ nakes.nama_lengkap }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-phone"></i>
+                            Nomor Telepon
+                        </label>
+                        <input type="tel" name="nomor_telepon" class="form-input" value="{{ nakes.nomor_telepon }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-birthday-cake"></i>
+                            Tanggal Lahir
+                        </label>
+                        <input type="date" name="tanggal_lahir" class="form-input" value="{{ nakes.tanggal_lahir|date:'Y-m-d' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-venus-mars"></i>
+                            Jenis Kelamin
+                        </label>
+                        <select name="jenis_kelamin" class="form-select">
+                            <option value="">Pilih Jenis Kelamin</option>
+                            {% for value, label in jenis_kelamin_choices %}
+                            <option value="{{ value }}" {% if nakes.jenis_kelamin == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Alamat
+                        </label>
+                        <textarea name="alamat" class="form-textarea" placeholder="Masukkan alamat lengkap">{{ nakes.alamat }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Professional Information -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="fas fa-briefcase"></i>
+                    Informasi Profesi
+                </div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-stethoscope"></i>
+                            Profesi
+                        </label>
+                        <select name="profesi" class="form-select" required>
+                            {% for value, label in profesi_choices %}
+                            <option value="{{ value }}" {% if nakes.profesi == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-toggle-on"></i>
+                            Status
+                        </label>
+                        <select name="status" class="form-select" required>
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if nakes.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-id-card"></i>
+                            Nomor Registrasi
+                        </label>
+                        <input type="text" name="nomor_registrasi" class="form-input" value="{{ nakes.nomor_registrasi }}" placeholder="STR, SIP, dll." required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-calendar-alt"></i>
+                            Tahun Pengalaman
+                        </label>
+                        <input type="number" name="tahun_pengalaman" class="form-input" value="{{ nakes.tahun_pengalaman }}" min="0" max="50">
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">
+                            <i class="fas fa-award"></i>
+                            Kategori Kualifikasi Utama
+                        </label>
+                        <select name="kategori_kualifikasi" class="form-select" required>
+                            {% for value, label in kategori_kualifikasi_choices %}
+                            <option value="{{ value }}" {% if nakes.kategori_kualifikasi == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Availability Section -->
+            <div class="form-section availability-section">
+                <div class="section-title">
+                    <i class="fas fa-clock"></i>
+                    Ketersediaan Waktu Kerja
+                </div>
+                <div class="availability-controls">
+                    <div class="log-selector">
+                        <label class="form-label" style="color: white; margin-bottom: 0;">
+                            <i class="fas fa-hourglass-half"></i>
+                            Jumlah Log:
+                        </label>
+                        <select name="log_availability" class="log-input" id="logSelector">
+                            {% for value, label in log_options %}
+                            <option value="{{ value }}" {% if current_log_count == value %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="log-info" id="logInfo">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="logText">{{ current_log_count }} Log = {{ nakes.log_ketersediaan_menit }} Menit</span>
+                    </div>
+                    <div class="tooltip" data-tooltip="1 Log = 50 menit waktu kerja. Semakin banyak log, semakin banyak shift yang bisa Anda ambil.">
+                        <i class="fas fa-question-circle" style="color: rgba(255,255,255,0.7);"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skills Section -->
+            <div class="form-section skills-section">
+                <div class="section-title">
+                    <i class="fas fa-medal"></i>
+                    Keahlian & Sertifikasi
+                </div>
+                
+                {% for category, skills in skill_categories.items %}
+                <div class="skill-category">
+                    <div class="category-title">
+                        {% if category == 'profesi_umum' %}
+                            <i class="fas fa-user-md"></i> Profesi Umum
+                        {% elif category == 'spesialisasi' %}
+                            <i class="fas fa-star"></i> Spesialisasi
+                        {% elif category == 'sertifikasi' %}
+                            <i class="fas fa-certificate"></i> Sertifikasi & Pelatihan
+                        {% elif category == 'manajemen' %}
+                            <i class="fas fa-cogs"></i> Manajemen & Administrasi
+                        {% endif %}
+                    </div>
+                    <div class="skills-grid">
+                        {% for value, label in skills %}
+                        <label class="skill-item" for="skill_{{ category }}_{{ forloop.counter }}">
+                            <input type="checkbox" 
+                                   name="skills" 
+                                   value="{{ value }}" 
+                                   class="skill-checkbox" 
+                                   id="skill_{{ category }}_{{ forloop.counter }}" 
+                                   {% if value in current_skills %}checked{% endif %}>
+                            <i class="{% if category == 'profesi_umum' %}fas fa-user-md{% elif category == 'spesialisasi' %}fas fa-star{% elif category == 'sertifikasi' %}fas fa-certificate{% else %}fas fa-cogs{% endif %} skill-icon"></i>
+                            <span>{{ label }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                <i class="fas fa-undo"></i>
+                Reset
+            </button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <i class="fas fa-save"></i>
+                Simpan Perubahan
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Profile page specific JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSkillSelection();
+    initializeLogSelector();
+    initializeFormValidation();
+});
+
+function initializeSkillSelection() {
+    const skillItems = document.querySelectorAll('.skill-item');
+    
+    skillItems.forEach(item => {
+        const checkbox = item.querySelector('.skill-checkbox');
+        
+        // Set initial state
+        if (checkbox.checked) {
+            item.classList.add('selected');
+        }
+        
+        item.addEventListener('click', function(e) {
+            if (e.target !== checkbox) {
+                checkbox.checked = !checkbox.checked;
+            }
+            
+            if (checkbox.checked) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    });
+}
+
+function initializeLogSelector() {
+    const logSelector = document.getElementById('logSelector');
+    const logInfo = document.getElementById('logText');
+    
+    logSelector.addEventListener('change', function() {
+        const logCount = parseInt(this.value);
+        const minutes = logCount * 50;
+        logInfo.textContent = `${logCount} Log = ${minutes} Menit`;
+        
+        // Update availability via AJAX
+        updateAvailability(logCount);
+    });
+}
+
+function updateAvailability(logCount) {
+    fetch('{% url "management:update_availability_ajax" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            log_count: logCount
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+        } else {
+            showNotification(data.error || 'Terjadi kesalahan', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Terjadi kesalahan saat memperbarui ketersediaan', 'error');
+    });
+}
+
+function initializeFormValidation() {
+    const form = document.getElementById('profileForm');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    form.addEventListener('submit', function(e) {
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+            <div class="spinner"></div>
+            Menyimpan...
+        `;
+        
+        // Validate required fields
+        const requiredFields = form.querySelectorAll('[required]');
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                isValid = false;
+                field.style.borderColor = '#ef4444';
+            } else {
+                field.style.borderColor = '#e5e7eb';
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `
+                <i class="fas fa-save"></i>
+                Simpan Perubahan
+            `;
+            showNotification('Harap lengkapi semua field yang wajib diisi', 'error');
+        }
+    });
+}
+
+function resetForm() {
+    if (confirm('Apakah Anda yakin ingin mereset form? Semua perubahan yang belum disimpan akan hilang.')) {
+        document.getElementById('profileForm').reset();
+        
+        // Reset skill selections
+        document.querySelectorAll('.skill-item').forEach(item => {
+            item.classList.remove('selected');
+        });
+        
+        // Reset log selector
+        document.getElementById('logSelector').selectedIndex = 0;
+        document.getElementById('logText').textContent = '0 Log = 0 Menit';
+        
+        showNotification('Form telah direset', 'success');
+    }
+}
+
+// Form field animations
+document.querySelectorAll('.form-input, .form-select, .form-textarea').forEach(field => {
+    field.addEventListener('focus', function() {
+        this.parentElement.style.transform = 'scale(1.02)';
+        this.parentElement.style.transition = 'transform 0.2s ease';
+    });
+    
+    field.addEventListener('blur', function() {
+        this.parentElement.style.transform = 'scale(1)';
+    });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + S to save
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        document.getElementById('profileForm').dispatchEvent(new Event('submit', { bubbles: true }));
+    }
+    
+    // Ctrl/Cmd + R to reset
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        resetForm();
+    }
+});
+</script>
+{% endblock %}

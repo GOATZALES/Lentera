@@ -1,0 +1,300 @@
+{% extends 'templates/management_base.html' %}
+
+{% load static %}
+
+{% block title %}Histori Kinerja - {{ nakes.nama_lengkap }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/histori_kinerja.css' %}"/>
+{% endblock %}
+
+{% block content %}
+<div class="histori-container">
+    
+
+    {% if has_histori %}
+        <!-- Statistics Cards -->
+        <div class="stats-container">
+            <div class="stat-card shifts">
+                <span class="stat-number">{{ total_shifts }}</span>
+                <span class="stat-label">Total Shift Selesai</span>
+            </div>
+            <div class="stat-card rating">
+                <span class="stat-number">{{ avg_rating }}</span>
+                <span class="stat-label">Rating Rata-rata</span>
+            </div>
+            <div class="stat-card earnings">
+                <span class="stat-number">Rp {{ total_earnings|floatformat:0 }}</span>
+                <span class="stat-label">Total Pendapatan</span>
+            </div>
+        </div>
+
+        <!-- Histori by Month -->
+        {% for month_group in grouped_histori %}
+        <div class="month-group">
+            <div class="month-title">
+                <div class="month-icon">
+                    <i class="fas fa-calendar"></i>
+                </div>
+                {{ month_group.month }}
+            </div>
+            
+            <div class="histori-grid">
+                {% for item in month_group.items %}
+                <div class="histori-card">
+                    <!-- Card Header -->
+                    <div class="card-header">
+                        <div class="faskes-name">{{ item.faskes_name }}</div>
+                        <div class="departemen-name">
+                            <i class="fas fa-door-open"></i>
+                            {{ item.departemen_name }}
+                        </div>
+                        <div class="shift-date">
+                            {{ item.tanggal_shift|date:"d M Y" }}
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="card-body">
+                        <!-- Shift Information -->
+                        <div class="shift-info">
+                            <div class="info-item">
+                                <i class="fas fa-clock info-icon"></i>
+                                <span class="info-value">{{ item.jam_shift }}</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-hourglass-half info-icon"></i>
+                                <span class="info-value">{{ item.durasi }} menit</span>
+                            </div>
+                            <div class="info-item earnings">
+                                <i class="fas fa-money-bill-wave info-icon"></i>
+                                <span class="info-value">Rp {{ item.bayaran|floatformat:0 }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Rating Section -->
+                        <div class="rating-section">
+                            {% if item.review %}
+                                <div class="rating-header">
+                                    <span class="rating-title">Penilaian Kinerja</span>
+                                    <div class="rating-stars">
+                                        {% for star in "12345" %}
+                                            {% if forloop.counter <= item.rating %}
+                                                <i class="fas fa-star star filled"></i>
+                                            {% else %}
+                                                <i class="fas fa-star star"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% if item.komentar %}
+                                    <div class="rating-comment">
+                                        <i class="fas fa-quote-left" style="margin-right: 8px; opacity: 0.7;"></i>
+                                        {{ item.komentar }}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <div class="no-rating">
+                                    <i class="fas fa-clock" style="margin-right: 8px;"></i>
+                                    Menunggu penilaian dari faskes
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <h3 class="empty-title">Belum Ada Histori Kinerja</h3>
+            <p class="empty-subtitle">
+                Anda belum menyelesaikan shift apapun. Mulai ambil tugas untuk membangun histori kinerja yang baik.
+            </p>
+            <a href="{% url 'management:cari_tugas' %}" class="empty-action">
+                <i class="fas fa-search"></i>
+                Cari Tugas Sekarang
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize rating stars animation
+    initializeRatingStars();
+    
+    // Initialize card interactions
+    initializeCardInteractions();
+    
+    // Initialize statistics animation
+    initializeStatsAnimation();
+});
+
+function initializeRatingStars() {
+    const starContainers = document.querySelectorAll('.rating-stars');
+    
+    starContainers.forEach(container => {
+        const stars = container.querySelectorAll('.star');
+        
+        stars.forEach((star, index) => {
+            star.addEventListener('mouseenter', function() {
+                // Add hover effect for better interaction feedback
+                this.style.transform = 'scale(1.2)';
+            });
+            
+            star.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    });
+}
+
+function initializeCardInteractions() {
+    const cards = document.querySelectorAll('.histori-card');
+    
+    cards.forEach(card => {
+        // Add click handler for card expansion (future feature)
+        card.addEventListener('click', function(e) {
+            // Prevent action if clicking on interactive elements
+            if (e.target.closest('.rating-stars') || e.target.closest('.empty-action')) {
+                return;
+            }
+            
+            // Add subtle feedback
+            this.style.transform = 'translateY(-2px) scale(1.01)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+        });
+        
+        // Add keyboard navigation support
+        card.setAttribute('tabindex', '0');
+        card.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                this.click();
+            }
+        });
+    });
+}
+
+function initializeStatsAnimation() {
+    const statNumbers = document.querySelectorAll('.stat-number');
+    
+    // Animate numbers on page load
+    statNumbers.forEach(stat => {
+        const finalValue = stat.textContent;
+        const isNumber = !isNaN(parseFloat(finalValue));
+        
+        if (isNumber) {
+            const numValue = parseFloat(finalValue.replace(/[^\d.]/g, ''));
+            animateNumber(stat, 0, numValue, 1500, finalValue.includes('Rp'));
+        }
+    });
+}
+
+function animateNumber(element, start, end, duration, isCurrency = false) {
+    const startTime = performance.now();
+    
+    function updateNumber(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function for smooth animation
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        const current = start + (end - start) * easeOutCubic;
+        
+        if (isCurrency) {
+            element.textContent = `Rp ${Math.floor(current).toLocaleString('id-ID')}`;
+        } else {
+            element.textContent = Math.floor(current).toString();
+        }
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateNumber);
+        }
+    }
+    
+    requestAnimationFrame(updateNumber);
+}
+
+// Add search functionality for histori cards
+function searchHistori(query) {
+    const cards = document.querySelectorAll('.histori-card');
+    const monthGroups = document.querySelectorAll('.month-group');
+    
+    if (!query) {
+        cards.forEach(card => card.style.display = 'block');
+        monthGroups.forEach(group => group.style.display = 'block');
+        return;
+    }
+    
+    cards.forEach(card => {
+        const faskesName = card.querySelector('.faskes-name').textContent.toLowerCase();
+        const departemenName = card.querySelector('.departemen-name').textContent.toLowerCase();
+        const comment = card.querySelector('.rating-comment')?.textContent.toLowerCase() || '';
+        
+        const matches = faskesName.includes(query.toLowerCase()) || 
+                       departemenName.includes(query.toLowerCase()) || 
+                       comment.includes(query.toLowerCase());
+        
+        card.style.display = matches ? 'block' : 'none';
+    });
+    
+    // Hide empty month groups
+    monthGroups.forEach(group => {
+        const visibleCards = group.querySelectorAll('.histori-card[style*="block"], .histori-card:not([style*="none"])');
+        group.style.display = visibleCards.length > 0 ? 'block' : 'none';
+    });
+}
+
+// Export search function for potential future use
+window.searchHistori = searchHistori;
+
+// Add keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + F to focus search (if implemented)
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        // Focus search input if available
+        const searchInput = document.querySelector('#histori-search');
+        if (searchInput) {
+            searchInput.focus();
+        }
+    }
+});
+
+// Intersection Observer for scroll animations
+if ('IntersectionObserver' in window) {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    // Observe cards for scroll animation
+    document.querySelectorAll('.histori-card').forEach(card => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,572 @@
+{% extends 'templates/management_base.html' %}
+
+{% load static %}
+
+
+{% block title %}Cari Tugas - {{ nakes.nama_lengkap }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/cari_tugas.css' %}"/>
+{% endblock %}
+
+
+
+{% block content %}
+        <!-- Main Content -->
+        <div class="content-wrapper">
+            <!-- Sidebar with Faskes List -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">
+                        <i class="fas fa-hospital"></i> Pilih Faskes
+                    </div>
+                    <div class="sidebar-subtitle">
+                        Klik faskes untuk melihat jadwal shift tersedia
+                    </div>
+                </div>
+                
+                <div class="faskes-list">
+                    {% for item in faskes_data %}
+                    <div class="faskes-card" data-faskes-id="{{ item.faskes.faskes_id }}">
+                        <div class="faskes-header">
+                            <div class="faskes-name">
+                                <i class="fas fa-building"></i>
+                                {{ item.faskes.nama_faskes }}
+                                <span class="faskes-type">{{ item.faskes.tipe_faskes }}</span>
+                            </div>
+                            <div class="faskes-address">
+                                <i class="fas fa-map-marker-alt"></i>
+                                {{ item.faskes.alamat|truncatechars:50 }}
+                            </div>
+                        </div>
+                        
+                        <div class="departemen-list">
+                            {% for dept in item.departemen_list %}
+                            <div class="departemen-item" data-departemen-id="{{ dept.departemen.departemen_id }}">
+                                <span class="departemen-name">
+                                    <i class="fas fa-door-open"></i>
+                                    {{ dept.departemen.nama_departemen }}
+                                </span>
+                                <span class="shift-count">
+                                    {{ dept.shift_count }} shift
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="faskes-card">
+                        <div class="faskes-header">
+                            <div class="faskes-name">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Tidak ada tugas tersedia
+                            </div>
+                            <div class="faskes-address">
+                                Tidak ada shift yang cocok dengan profesi dan kualifikasi Anda saat ini.
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="main-content">
+                <div id="schedule-content">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="empty-title">Pilih Faskes dan Departemen</div>
+                        <div class="empty-subtitle">
+                            Klik pada salah satu faskes di sebelah kiri untuk melihat jadwal shift yang tersedia.
+                            Anda dapat langsung menerima tugas yang sesuai dengan kualifikasi Anda.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shift Detail Modal -->
+    <div id="shiftModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Detail Shift
+                </div>
+                <div class="modal-subtitle" id="modalDepartemenInfo"></div>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="modalClose">
+                    <i class="fas fa-times"></i>
+                    Tutup
+                </button>
+                <button class="btn btn-primary" id="modalAccept">
+                    <i class="fas fa-check"></i>
+                    Terima Tugas
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentDepartemen = null;
+        let currentShifts = [];
+        let selectedShift = null;
+
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeFaskesSelection();
+            initializeModal();
+        });
+
+        function initializeFaskesSelection() {
+            const faskesCards = document.querySelectorAll('.faskes-card');
+            
+            faskesCards.forEach(card => {
+                const departemenItems = card.querySelectorAll('.departemen-item');
+                
+                departemenItems.forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        
+                        // Remove previous selections
+                        faskesCards.forEach(c => c.classList.remove('selected'));
+                        
+                        // Add selection to parent card
+                        card.classList.add('selected');
+                        
+                        // Get departemen ID and load schedule
+                        const departemenId = this.getAttribute('data-departemen-id');
+                        loadDepartemenSchedule(departemenId);
+                    });
+                });
+            });
+        }
+
+        function loadDepartemenSchedule(departemenId) {
+            const scheduleContent = document.getElementById('schedule-content');
+            scheduleContent.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <div>Memuat jadwal shift...</div>
+                </div>
+            `;
+            
+            fetch(`/management/api/departemen/${departemenId}/schedule/`)
+                .then(response => response.json())
+                .then(data => {
+                    currentDepartemen = data.departemen;
+                    currentShifts = data.shifts;
+                    renderSchedule(data);
+                })
+                .catch(error => {
+                    console.error('Error loading schedule:', error);
+                    scheduleContent.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon" style="color: #ef4444;">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="empty-title">Error Memuat Jadwal</div>
+                            <div class="empty-subtitle">
+                                Terjadi kesalahan saat memuat jadwal. Silakan coba lagi atau hubungi administrator.
+                            </div>
+                        </div>
+                    `;
+                });
+        }
+
+        function renderSchedule(data) {
+            const scheduleContent = document.getElementById('schedule-content');
+            
+            if (data.shifts.length === 0) {
+                scheduleContent.innerHTML = `
+                    <div class="no-shifts">
+                        <div class="no-shifts-icon">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <div class="no-shifts-title">Tidak Ada Shift Tersedia</div>
+                        <div class="no-shifts-subtitle">
+                            Tidak ada shift yang tersedia di ${data.departemen.nama} untuk 2 minggu ke depan.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Calculate stats
+            const totalShifts = data.shifts.length;
+            const totalEarnings = data.shifts.reduce((sum, shift) => sum + shift.estimated_worth, 0);
+
+            // Create schedule header
+            const headerHtml = `
+                <div class="schedule-header">
+                    <div class="schedule-info">
+                        <div class="schedule-title">${data.departemen.nama}</div>
+                        <div class="schedule-subtitle">
+                            <i class="fas fa-building"></i>
+                            ${data.departemen.faskes} - Jadwal 2 Minggu ke Depan
+                        </div>
+                    </div>
+                    <div class="schedule-stats">
+                        <div class="stat-card">
+                            <div class="stat-number">${totalShifts}</div>
+                            <div class="stat-label">Shift Tersedia</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">Rp ${(totalEarnings / 1000).toFixed(0)}K</div>
+                            <div class="stat-label">Total Potensi</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Create calendar view
+            const calendarHtml = generateCalendarView(data.shifts, data.date_range);
+            
+            scheduleContent.innerHTML = headerHtml + calendarHtml;
+            
+            // Add event listeners to shift blocks
+            addShiftEventListeners();
+        }
+
+        function generateCalendarView(shifts, dateRange) {
+            const startDate = new Date(dateRange.start);
+            
+            // Group shifts by date
+            const shiftsByDate = {};
+            shifts.forEach(shift => {
+                const date = shift.tanggal;
+                if (!shiftsByDate[date]) {
+                    shiftsByDate[date] = [];
+                }
+                shiftsByDate[date].push(shift);
+            });
+
+            // Get current week dates
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                weekDates.push(date);
+            }
+
+            // Generate calendar HTML
+            let calendarHtml = `
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <i class="fas fa-calendar-week"></i>
+                        Jadwal Mingguan - ${formatDateRange(weekDates[0], weekDates[6])}
+                    </div>
+                    <div class="week-view">
+                        <div class="time-header">Jam</div>
+            `;
+            
+            // Day headers
+            const dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+            weekDates.forEach((date, index) => {
+                const dayName = dayNames[index];
+                const dateStr = `${date.getDate()}/${date.getMonth() + 1}`;
+                calendarHtml += `<div class="day-header">${dayName}<br><small>${dateStr}</small></div>`;
+            });
+
+            // Generate time slots and days
+            for (let hour = 6; hour <= 22; hour += 2) {
+                calendarHtml += `<div class="time-slot">${hour.toString().padStart(2, '0')}:00</div>`;
+                
+                weekDates.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    let cellContent = '';
+                    
+                    if (shiftsByDate[dateStr]) {
+                        shiftsByDate[dateStr].forEach(shift => {
+                            const shiftHour = parseInt(shift.jam_mulai.split(':')[0]);
+                            // Show shift if it starts within this 2-hour block
+                            if (shiftHour >= hour && shiftHour < hour + 2) {
+                                cellContent += `
+                                    <div class="shift-block" data-shift-id="${shift.shift_id}">
+                                        <div class="shift-time">${shift.jam_mulai}-${shift.jam_selesai}</div>
+                                        <div class="shift-info">${shift.durasi_menit}min • Rp ${(shift.estimated_worth / 1000).toFixed(0)}K</div>
+                                    </div>
+                                `;
+                            }
+                        });
+                    }
+                    
+                    calendarHtml += `<div class="day-cell" data-date="${dateStr}" data-hour="${hour}">${cellContent}</div>`;
+                });
+            }
+            
+            calendarHtml += '</div></div>';
+            return calendarHtml;
+        }
+
+        function addShiftEventListeners() {
+            const shiftBlocks = document.querySelectorAll('.shift-block');
+            shiftBlocks.forEach(block => {
+                block.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const shiftId = this.getAttribute('data-shift-id');
+                    showShiftModal(shiftId);
+                });
+            });
+        }
+
+        function showShiftModal(shiftId) {
+            const shift = currentShifts.find(s => s.shift_id === shiftId);
+            if (!shift) return;
+
+            selectedShift = shift;
+            
+            // Populate modal content
+            document.getElementById('modalDepartemenInfo').innerHTML = `
+                <i class="fas fa-hospital"></i>
+                ${currentDepartemen.nama} - ${currentDepartemen.faskes}
+            `;
+            
+            const modalBody = document.getElementById('modalBody');
+            modalBody.innerHTML = `
+                <div class="info-grid">
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-calendar"></i>
+                            Tanggal
+                        </span>
+                        <span class="info-value">${formatDate(shift.tanggal)}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-clock"></i>
+                            Waktu
+                        </span>
+                        <span class="info-value">${shift.jam_mulai} - ${shift.jam_selesai}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-hourglass-half"></i>
+                            Durasi
+                        </span>
+                        <span class="info-value">${shift.durasi_menit} menit</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-money-bill-wave"></i>
+                            Estimasi Bayaran
+                        </span>
+                        <span class="info-value highlight">Rp ${shift.estimated_worth.toLocaleString('id-ID')}</span>
+                    </div>
+                    ${shift.deskripsi_tugas ? `
+                    <div class="info-row">
+                        <span class="info-label">
+                            <i class="fas fa-tasks"></i>
+                            Deskripsi Tugas
+                        </span>
+                        <span class="info-value">${shift.deskripsi_tugas}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Show modal
+            document.getElementById('shiftModal').style.display = 'block';
+        }
+
+        function initializeModal() {
+            const modal = document.getElementById('shiftModal');
+            const closeBtn = document.getElementById('modalClose');
+            const acceptBtn = document.getElementById('modalAccept');
+            
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+            });
+            
+            acceptBtn.addEventListener('click', function() {
+                if (selectedShift) {
+                    acceptShift(selectedShift.shift_id);
+                }
+            });
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+            
+            // Close modal with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.style.display === 'block') {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+
+        function acceptShift(shiftId) {
+            const acceptBtn = document.getElementById('modalAccept');
+            const originalText = acceptBtn.innerHTML;
+            
+            acceptBtn.disabled = true;
+            acceptBtn.innerHTML = `
+                <div class="loading-spinner" style="width: 16px; height: 16px; margin-right: 8px;"></div>
+                Memproses...
+            `;
+            
+            fetch(`/management/api/shift/${shiftId}/accept/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Success animation
+                    acceptBtn.innerHTML = `
+                        <i class="fas fa-check"></i>
+                        Berhasil!
+                    `;
+                    acceptBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                    
+                    setTimeout(() => {
+                        document.getElementById('shiftModal').style.display = 'none';
+                        
+                        // Show success notification
+                        showNotification(data.message, 'success');
+                        
+                        // Remove shift block with animation
+                        const shiftBlock = document.querySelector(`[data-shift-id="${shiftId}"]`);
+                        if (shiftBlock) {
+                            shiftBlock.classList.add('shift-removed');
+                            setTimeout(() => {
+                                // Reload schedule to update available shifts
+                                if (currentDepartemen) {
+                                    const activeDepartemenElement = document.querySelector('.faskes-card.selected .departemen-item');
+                                    if (activeDepartemenElement) {
+                                        const departemenId = activeDepartemenElement.getAttribute('data-departemen-id');
+                                        loadDepartemenSchedule(departemenId);
+                                    }
+                                }
+                            }, 500);
+                        }
+                    }, 1500);
+                } else {
+                    showNotification(data.error || 'Terjadi kesalahan', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error accepting shift:', error);
+                showNotification('Terjadi kesalahan saat menerima shift', 'error');
+            })
+            .finally(() => {
+                setTimeout(() => {
+                    acceptBtn.disabled = false;
+                    acceptBtn.innerHTML = originalText;
+                    acceptBtn.style.background = '';
+                }, 2000);
+            });
+        }
+
+        function showNotification(message, type) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 16px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 400px;
+            `;
+            
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                notification.innerHTML = `<i class="fas fa-check-circle" style="margin-right: 8px;"></i>${message}`;
+            } else {
+                notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                notification.innerHTML = `<i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i>${message}`;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 5000);
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        function formatDateRange(startDate, endDate) {
+            const options = { day: 'numeric', month: 'short' };
+            const start = startDate.toLocaleDateString('id-ID', options);
+            const end = endDate.toLocaleDateString('id-ID', options);
+            return `${start} - ${end}`;
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Press 'C' to focus on search or navigation
+            if (e.key === 'c' || e.key === 'C') {
+                const firstFaskes = document.querySelector('.faskes-card');
+                if (firstFaskes) {
+                    firstFaskes.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        });
+
+        // Add smooth scrolling for better UX
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+    </script>
+{% endblock %}
