@@ -1,0 +1,183 @@
+{% extends "base_planning.html" %}
+{% load humanize %}
+{% load planning_extras %} {# Untuk safe_slugify jika ada di base atau diperlukan #}
+
+{% block title %}{{ page_title }} - Faskes {{ faskes_id }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .planning-container { padding: 24px; }
+    .detail-card {
+        background-color: #fff;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+        margin-bottom: 30px;
+        border: 1px solid #e2e8f0;
+    }
+    .detail-card-header {
+        color: #1e293b; font-weight: 700; margin-bottom: 20px;
+        font-size: 1.6rem; padding-bottom: 10px;
+        border-bottom: 2px solid #f1f5f9; display: flex; align-items: center;
+    }
+    .detail-card-header i { margin-right: 12px; color: #dc3545; } /* Merah untuk bencana */
+    .section-title {
+        font-size: 1.25rem; font-weight: 600; color: #343a40;
+        margin-top: 20px; margin-bottom: 10px;
+    }
+    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+    .info-item p { margin-bottom: 0.3rem; }
+    .info-item strong { color: #495057; }
+    .info-item span.value { color: #212529; font-weight: 500; }
+    .risk-level-Kritis, .risk-level-Tinggi { color: #dc3545; font-weight: bold; }
+    .risk-level-Sedang { color: #fd7e14; font-weight: bold; }
+    .risk-level-Rendah { color: #28a745; font-weight: bold; }
+    .recommendation-text { white-space: pre-line; background-color: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 0.9rem; color: #495057; }
+    .btn-trigger-analysis {
+        background-color: #ffc107; border-color: #ffc107; color: #212529;
+    }
+     .btn-trigger-analysis:hover { background-color: #e0a800; border-color: #d39e00; }
+</style>
+{% endblock %}
+
+{% block content_planning %}
+<div class="container py-4 planning-container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if event %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">{{ page_title }}</h1>
+        <a href="{% url 'planning:disaster_dashboard' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Kembali ke Dashboard Risiko
+        </a>
+    </div>
+
+    <div class="detail-card">
+        <h2 class="detail-card-header"><i class="fas fa-hard-hat"></i>Informasi Dasar Kejadian</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <p><strong>Jenis Bencana:</strong> <span class="value">{{ event.disaster_type }}</span></p>
+                <p><strong>Lokasi Utama:</strong> <span class="value">{{ event.location_description }}</span></p>
+            </div>
+            <div class="info-item">
+                <p><strong>Level Keparahan:</strong> <span class="value risk-level-{{ event.get_severity_level_display|slugify }}">{{ event.get_severity_level_display }}</span></p>
+                <p><strong>Status:</strong> 
+                    {% if event.is_active %} <span class="badge bg-success">AKTIF</span>
+                    {% else %} <span class="badge bg-secondary">SELESAI</span>{% endif %}
+                </p>
+            </div>
+            <div class="info-item">
+                <p><strong>Waktu Aktivasi:</strong> <span class="value">{{ event.activation_time|date:"d M Y, H:i T" }}</span></p>
+                {% if not event.is_active and event.deactivation_time %}
+                <p><strong>Waktu Deaktivasi:</strong> <span class="value">{{ event.deactivation_time|date:"d M Y, H:i T" }}</span></p>
+                {% endif %}
+            </div>
+             <div class="info-item">
+                <p><strong>Pemicu:</strong> 
+                    <span class="value">
+                    {% if event.triggered_by_api %}Otomatis (API)
+                    {% elif event.manually_triggered_by %}{{ event.manually_triggered_by.username }}
+                    {% else %}Manual{% endif %}
+                    </span>
+                </p>
+            </div>
+        </div>
+        <div class="mt-3">
+            <p><strong>Wilayah Terdampak (Input):</strong><br><span class="value ps-2 d-block border-start border-2 border-secondary">{{ event.affected_regions_input|linebreaksbr }}</span></p>
+        </div>
+        {% if event.description %}
+        <div class="mt-3">
+            <p><strong>Deskripsi Tambahan:</strong><br><span class="value ps-2 d-block border-start border-2 border-secondary">{{ event.description|linebreaksbr }}</span></p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="detail-card">
+        <h2 class="detail-card-header"><i class="fas fa-brain"></i>Analisis Risiko & Rekomendasi AI</h2>
+        
+        {% if event.ai_regional_risk_assessment_results_json %}
+            <h3 class="section-title">Hasil Analisis Risiko Regional:</h3>
+            <ul class="list-group list-group-flush mb-3">
+                {% for assessment in event.ai_regional_risk_assessment_results_json %}
+                <li class="list-group-item">
+                    <p><strong>Wilayah:</strong> {{ assessment.region_analyzed|default_if_none:"Tidak ada data wilayah" }}</p>
+                    <p><strong>Tingkat Risiko:</strong> <span class="risk-level-{{ assessment.overall_risk_level|slugify }}">{{ assessment.overall_risk_level|default:"N/A" }}</span></p>
+                    <p><small><em>Justifikasi: {{ assessment.risk_justification|default:"-" }}</em></small></p>
+                    {% if assessment.potential_major_hazards %}
+                    <p><small>Potensi Bahaya: {{ assessment.potential_major_hazards|join:", " }}</small></p>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">Belum ada hasil analisis risiko regional dari AI untuk kejadian ini.</p>
+        {% endif %}
+
+        {% if event.ai_pre_positioning_recommendations_text %}
+            <h3 class="section-title">Rekomendasi Pre-Positioning & Staf:</h3>
+            <div class="recommendation-text">
+                {{ event.ai_pre_positioning_recommendations_text }}
+            </div>
+        {% else %}
+            <p class="text-muted">Belum ada rekomendasi pre-positioning & staf dari AI untuk kejadian ini.</p>
+        {% endif %}
+
+        {% if event.is_active %}
+        <div class="mt-4 pt-3 border-top">
+            <form method="post" action="{% url 'planning:trigger_disaster_analysis' event.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning btn-trigger-analysis">
+                    <i class="fas fa-sync-alt me-2"></i> Jalankan/Perbarui Analisis AI Sekarang
+                </button>
+            </form>
+            <small class="d-block text-muted mt-1">Ini akan memicu ulang proses analisis risiko dan rekomendasi staf oleh AI berdasarkan data terbaru.</small>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Bagian untuk Resource Allocation bisa ditambahkan di sini -->
+    <div class="detail-card">
+         <h2 class="detail-card-header"><i class="fas fa-people-carry"></i>Saran Alokasi Sumber Daya (AI)</h2>
+         {% if event.ai_pre_positioning_recommendations_text %}
+            {% comment %}
+            Ini bisa diparsing lebih lanjut dari ai_pre_positioning_recommendations_text
+            atau jika Anda punya field terpisah di model event untuk saran alokasi.
+            Contoh:
+            - Tim Medis Darurat (2 Dokter, 4 Perawat IGD) ke Posko Utama {Nama Wilayah Kritis}.
+            - Distribusikan 500 paket P3K ke {Nama Wilayah Terdampak Sedang}.
+            - Siapkan 2 unit Ambulans siaga di perbatasan {Nama Wilayah}.
+            {% endcomment %}
+            <p class="text-muted"><em>Saran alokasi sumber daya berdasarkan rekomendasi kebutuhan staf dan tingkat risiko regional akan ditampilkan di sini. Untuk saat ini, silakan merujuk pada detail "Rekomendasi Pre-Positioning & Staf".</em></p>
+            <div class="recommendation-text mt-2">
+                <strong>Contoh Agregat Kebutuhan Staf (jika tersedia dari AI):</strong>
+                {% if event.ai_pre_positioning_recommendations_text %}
+                    {% for line in event.ai_pre_positioning_recommendations_text.splitlines %}
+                        {% if "Total Estimasi Kebutuhan Staf Tambahan" in line %}
+                            <p>{{ line }}</p>
+                            {% if forloop.counter < event.ai_pre_positioning_recommendations_text.splitlines|length %}
+                                <p>{{ event.ai_pre_positioning_recommendations_text.splitlines|slice:forloop.counter|first }}</p>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                {% else %}
+                    <p>Tidak ada data.</p>
+                {% endif %}
+            </div>
+         {% else %}
+            <p class="text-muted">Analisis AI belum dijalankan atau tidak menghasilkan saran alokasi sumber daya.</p>
+         {% endif %}
+    </div>
+
+    {% else %}
+    <div class="alert alert-danger">Detail kejadian darurat tidak ditemukan.</div>
+    {% endif %}
+</div>
+{% endblock %}

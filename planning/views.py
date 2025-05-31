@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, date
 import json
 from django.views.decorators.http import require_POST
 
+from authentication.models import Faskes
+
 from . import logic as planning_logic # Menggunakan logic.py
 from .models import BudgetPlan # Jika menggunakan model BudgetPlan
 
@@ -19,41 +21,116 @@ def get_current_faskes_id(request):
     #     return request.user.faskesprofile.faskes_id 
     return "FKS001-JKTSEL" # Placeholder, ganti dengan logika sebenarnya
 
-# @login_required
+#@login_required # Pastikan ini aktif jika sudah ada sistem login Faskes
 def dashboard_view(request):
-    faskes_id = get_current_faskes_id(request)
-    context = {'faskes_id': faskes_id, 'forecast_history': [], 'error_message': None}
-    
-    # Panggil fungsi logic
-    history_data_result = planning_logic.get_faskes_forecast_history(faskes_id)
+    faskes_id = get_current_faskes_id(request) # Ganti dengan ID Faskes yang login
+    context = {
+        'faskes_id': faskes_id,
+        'error_message': None,
+        'latest_forecast_summary': None,
+        'upcoming_forecasts_summary': [], # Untuk beberapa hari/minggu ke depan
+        'accuracy_trend': None, # Rata-rata akurasi
+        'staffing_trend_chart_data_json': json.dumps({}),
+        'historical_comparison_chart_data_json': json.dumps({}),
+        'recent_alerts': [],
+        'forecast_history_list': [] # Ganti nama dari forecast_history
+    }
+
+    # 1. Ambil Riwayat Forecast (misal 30 hari terakhir untuk tren & history list)
+    # Anda mungkin perlu fungsi baru di logic untuk get data dengan rentang tanggal
+    # Untuk sekarang kita ambil beberapa data terbaru saja
+    history_data_result = planning_logic.get_faskes_forecast_history(faskes_id, limit=30) # Ambil 30 log terakhir
 
     if isinstance(history_data_result, dict) and "error" in history_data_result:
         context['error_message'] = f"Gagal memuat riwayat forecast: {history_data_result['error']}"
     elif isinstance(history_data_result, list):
-        context['forecast_history'] = history_data_result
-        # Proses data untuk chart (sama seperti sebelumnya)
-        chart_labels = []
-        predicted_doctors_data = []
-        actual_doctors_data = []
+        context['forecast_history_list'] = history_data_result[:7] # Tampilkan 7 terbaru di tabel
 
-        for forecast in history_data_result[:10]: # Ambil 10 terbaru untuk grafik
-            chart_labels.append(forecast.get("period_start", "N/A"))
-            parsed_output = forecast.get("parsed_ai_output", {})
-            predicted_staffing = parsed_output.get("predicted_staffing_demand", {}) if parsed_output else {}
-            predicted_doctors_data.append(predicted_staffing.get("Dokter Umum", 0))
+        if history_data_result:
+            # 2. Ringkasan Forecast Terkini (ambil yang paling baru dengan tanggal mulai >= hari ini)
+            today = date.today()
+            future_forecasts = sorted(
+                [fc for fc in history_data_result if fc.get("period_start") and datetime.strptime(fc.get("period_start"), "%Y-%m-%d").date() >= today],
+                key=lambda x: x.get("period_start")
+            )
             
-            feedback_staffing = forecast.get("feedback_info", {}).get("actual_data_summary", {})
-            actual_doctors_data.append(feedback_staffing.get("Dokter Umum", None))
+            if future_forecasts:
+                context['latest_forecast_summary'] = future_forecasts[0] # Paling dekat dengan hari ini
+                # Ambil beberapa forecast mendatang untuk ringkasan
+                context['upcoming_forecasts_summary'] = future_forecasts[:3]
 
-        context['chart_data'] = {
-            'labels': chart_labels[::-1],
-            'predicted_doctors': predicted_doctors_data[::-1],
-            'actual_doctors': actual_doctors_data[::-1]
-        }
-        context['chart_data_json'] = json.dumps(context['chart_data'])
-    else: # Handle jika bukan list atau dict error (tidak diharapkan)
+
+            # 3. Tren Akurasi Keseluruhan (dari feedback yang ada)
+            # Ini memerlukan query ke AiModelPerformanceFeedback atau join di logic.py
+            # Untuk contoh:
+            valid_accuracies = [
+                fc['feedback_info']['overall_accuracy_score']
+                for fc in history_data_result 
+                if fc.get('feedback_info') and fc['feedback_info'].get('overall_accuracy_score') is not None
+            ]
+            if valid_accuracies:
+                context['accuracy_trend'] = round(sum(valid_accuracies) / len(valid_accuracies), 1)
+
+            # 4. Data untuk Grafik Tren Kebutuhan Staf (misal Dokter Umum & Perawat)
+            staff_trend_labels = []
+            predicted_doctors = []
+            predicted_nurses = []
+            # Ambil data dari history_data_result yang diurutkan berdasarkan tanggal (asumsi sudah urut)
+            # Balik urutan agar dari terlama ke terbaru untuk grafik
+            for forecast in reversed(history_data_result[:15]): # Ambil 15 data terakhir untuk tren
+                staff_trend_labels.append(f"{forecast.get('period_start', 'N/A')}")
+                demand = forecast.get('parsed_ai_output', {}).get('predicted_staffing_demand', {})
+                predicted_doctors.append(demand.get('Dokter Umum', 0))
+                predicted_nurses.append(demand.get('Perawat', 0))
+            
+            context['staffing_trend_chart_data_json'] = json.dumps({
+                'labels': staff_trend_labels,
+                'doctors': predicted_doctors,
+                'nurses': predicted_nurses
+            })
+
+            # 5. Data untuk Grafik Perbandingan Prediksi vs Aktual (lebih interaktif)
+            # Ini bisa sama dengan yang sebelumnya, atau Anda bisa buat lebih spesifik.
+            # Kita akan menggunakan chart_data yang sama seperti sebelumnya untuk perbandingan Dokter Umum
+            # tapi akan lebih baik jika bisa filter jenis nakes di frontend.
+            comp_chart_labels = []
+            comp_pred_doctors = []
+            comp_actual_doctors = []
+            for forecast in reversed(history_data_result[:10]): # Ambil 10 terbaru
+                comp_chart_labels.append(forecast.get("period_start", "N/A"))
+                demand = forecast.get('parsed_ai_output', {}).get('predicted_staffing_demand', {})
+                comp_pred_doctors.append(demand.get('Dokter Umum', 0))
+                feedback_summary = forecast.get("feedback_info", {}).get("actual_data_summary", {})
+                comp_actual_doctors.append(feedback_summary.get('Dokter Umum', None)) # None jika tidak ada data aktual
+            
+            context['historical_comparison_chart_data_json'] = json.dumps({
+                'labels': comp_chart_labels,
+                'predicted_doctors': comp_pred_doctors,
+                'actual_doctors': comp_actual_doctors
+            })
+            
+            # 6. Alert & Rekomendasi Terbaru
+            if context['latest_forecast_summary'] and context['latest_forecast_summary'].get('parsed_ai_output'):
+                alerts = context['latest_forecast_summary']['parsed_ai_output'].get('peak_period_alerts_and_recommendations')
+                if alerts and alerts.lower() not in ["tidak ada.", "tidak ada periode puncak signifikan yang teridentifikasi dari data yang tersedia."]:
+                    context['recent_alerts'].append({
+                        "period": context['latest_forecast_summary'].get('forecasting_period', 'Periode terkini'),
+                        "message": alerts
+                        })
+            # Anda bisa juga mengambil alert dari beberapa forecast mendatang
+            for fc_upcoming in context['upcoming_forecasts_summary']:
+                 if fc_upcoming and fc_upcoming.get('parsed_ai_output'):
+                    alerts_up = fc_upcoming['parsed_ai_output'].get('peak_period_alerts_and_recommendations')
+                    if alerts_up and alerts_up.lower() not in ["tidak ada.", "tidak ada periode puncak signifikan yang teridentifikasi dari data yang tersedia."] and alerts_up not in [a['message'] for a in context['recent_alerts']]:
+                         context['recent_alerts'].append({
+                            "period": f"{fc_upcoming.get('period_start')} - {fc_upcoming.get('period_end')}",
+                            "message": alerts_up
+                         })
+
+
+    else:
         context['error_message'] = "Format data riwayat forecast tidak dikenali."
-
+        
     return render(request, 'dashboard.html', context)
 
 # @login_required
@@ -145,125 +222,177 @@ def submit_actual_data_view(request, forecast_log_id):
 # @login_required
 def budget_planning_view(request):
     faskes_id = get_current_faskes_id(request)
-    context = {'faskes_id': faskes_id, 'budget_details': None, 'form_data': {}}
+    # Dapatkan instance FaskesPartner untuk mengambil data default jika ada
+    try:
+        partner = Faskes.objects.get(faskes_id_internal=faskes_id)
+    except Faskes.DoesNotExist:
+        messages.error(request, f"Data Faskes Partner dengan ID {faskes_id} tidak ditemukan.")
+        return redirect('planning:dashboard') # atau halaman lain
+
+    context = {
+        'faskes_id': faskes_id,
+        'faskes_name': partner.nama_faskes, # Tambahkan nama faskes untuk UI
+        'budget_summary': None,
+        'form_data': {}, # Untuk prefill form jika ada error
+        'page_title': 'Perencanaan Budget SDM Otomatis' # Untuk base template
+    }
 
     if request.method == 'POST':
-        quarter_start_str = request.POST.get('quarter_start_date')
-        historical_summary_q = request.POST.get('historical_summary_quarterly', "Data historis umum untuk kuartal ini.")
-        seasonal_patterns_q = request.POST.get('seasonal_patterns_quarterly', "Pola musiman umum untuk kuartal ini.")
-        bmkg_weather_q = request.POST.get('bmkg_weather_forecast_quarterly', '') # Tambahkan ini
-        local_events_q = request.POST.get('local_events_calendar_quarterly', '') # Tambahkan ini
-        mudik_info_q = request.POST.get('mudik_calendar_info_quarterly', '') # Tambahkan ini
+        # Input utama dari Faskes hanya periode dan mungkin catatan/penyesuaian umum
+        start_period_str = request.POST.get('start_period_date') # Misal, YYYY-MM-DD awal periode budget (kuartal/semester)
+        number_of_months_to_plan = int(request.POST.get('duration_months', 3)) # Default 3 bulan (kuartal)
+        budget_notes = request.POST.get('budget_notes', "")
+        
+        # (Opsional) Faskes bisa memberikan persentase penyesuaian biaya umum
+        cost_adjustment_percentage = float(request.POST.get('cost_adjustment_percentage', 0)) / 100.0
 
-
-        context['form_data'] = request.POST
+        context['form_data'] = request.POST # Simpan data form
 
         try:
-            quarter_start_date = datetime.strptime(quarter_start_str, "%Y-%m-%d").date()
+            start_period_date = datetime.strptime(start_period_str, "%Y-%m-%d").date()
         except (ValueError, TypeError):
-            messages.error(request, "Format tanggal awal kuartal tidak valid.")
-            return render(request, 'budget_planning_form.html', context)
+            messages.error(request, "Format tanggal awal periode tidak valid. Gunakan YYYY-MM-DD.")
+            return render(request, 'planning/budget_planning_form.html', context)
 
-        periods = []
-        current_start = quarter_start_date
-        for i_month in range(3): # Untuk 3 bulan
-            month_num_for_form = current_start.month # Untuk mengambil input spesifik bulan
-            
+        if not 1 <= number_of_months_to_plan <= 12:
+            messages.error(request, "Durasi perencanaan harus antara 1 hingga 12 bulan.")
+            return render(request, 'planning/budget_planning_form.html', context)
+
+        # Bagi periode menjadi sub-periode per bulan untuk forecasting
+        monthly_periods_to_forecast = []
+        current_month_start = start_period_date
+        for _ in range(number_of_months_to_plan):
             # Tentukan akhir bulan
-            if current_start.month == 12:
-                current_end = current_start.replace(day=31)
+            if current_month_start.month == 12:
+                current_month_end = current_month_start.replace(day=31)
             else:
-                current_end = current_start.replace(month=current_start.month + 1, day=1) - timedelta(days=1)
+                current_month_end = current_month_start.replace(month=current_month_start.month + 1, day=1) - timedelta(days=1)
             
-            periods.append({
-                "start": current_start, 
-                "end": current_end, 
-                "month_form_key_suffix": f"month_{month_num_for_form}" # Untuk ambil data form per bulan
+            monthly_periods_to_forecast.append({
+                "start": current_month_start, 
+                "end": current_month_end,
             })
             
-            if current_start.month == 12: # Pindah ke bulan berikutnya
-                current_start = current_start.replace(year=current_start.year+1, month=1, day=1)
+            # Pindah ke awal bulan berikutnya
+            if current_month_start.month == 12:
+                current_month_start = current_month_start.replace(year=current_month_start.year + 1, month=1, day=1)
             else:
-                current_start = current_start.replace(month=current_start.month + 1, day=1)
+                current_month_start = current_month_start.replace(month=current_month_start.month + 1, day=1)
+        
+        end_period_date = monthly_periods_to_forecast[-1]['end'] # Akhir periode budget keseluruhan
 
-        total_min_cost_quarter = 0
-        total_max_cost_quarter = 0
-        monthly_forecasts_details = []
-        all_ai_requests_successful = True
-        related_log_ids = [] # Untuk BudgetPlan model
+        aggregated_min_cost = 0
+        aggregated_max_cost = 0
+        monthly_forecast_details = []
+        all_sub_forecasts_successful = True
+        forecast_log_ids_for_budget = []
 
-        for period in periods:
-            # Ambil input spesifik bulan jika ada, jika tidak pakai input kuartalan
-            hist_summary_period = request.POST.get(f'historical_summary_{period["month_form_key_suffix"]}', '').strip() or historical_summary_q
-            seas_pattern_period = request.POST.get(f'seasonal_patterns_{period["month_form_key_suffix"]}', '').strip() or seasonal_patterns_q
-            # Tambahkan untuk field lain juga jika ada input per bulan
+        for period in monthly_periods_to_forecast:
+            # Payload untuk AI service menggunakan data default Faskes dari DB
+            # Tidak ada input manual data eksternal di sini
+            # Data historis dan seasonal diambil dari profil FaskesPartner
             
-            payload = {
-                "faskes_id": faskes_id,
+            # Ringkas data historis & seasonal dari FaskesPartner.model
+            # Ini bisa dibuat lebih cerdas untuk mengambil yang relevan dengan periode.
+            # Untuk demo, kita ambil yang ada di JSON field.
+            historical_summary_text = f"Kunjungan rata-rata mingguan: {partner.rata_kunjungan_harian_seminggu_json}. Puncak diketahui: {partner.periode_puncak_diketahui_json}."
+            seasonal_patterns_text = f"Pola musiman umum. Layanan utama: {partner.layanan_unggulan_json}."
+            
+            # Data eksternal akan diambil/disimulasikan oleh AI Service (Langchain Tool)
+            # Jadi, kita tidak mengirimnya secara eksplisit dari sini.
+            # AI Service akan menggunakan kota dari FaskesPartner untuk tool data eksternal.
+
+            payload_for_ai = {
+                "faskes_id": faskes_id, # ID Faskes Partner
                 "period_start": period["start"].strftime("%Y-%m-%d"),
                 "period_end": period["end"].strftime("%Y-%m-%d"),
-                "historical_patient_summary": hist_summary_period,
-                "seasonal_disease_patterns": seas_pattern_period,
-                "bmkg_weather_forecast": bmkg_weather_q, # Sementara pakai yg kuartalan, bisa dibuat per bulan juga
-                "local_events_calendar": local_events_q,
-                "mudik_calendar_info": mudik_info_q,
+                "historical_patient_summary": historical_summary_text, # Ringkasan dari DB Faskes Partner
+                "seasonal_disease_patterns": seasonal_patterns_text, # Ringkasan dari DB Faskes Partner
+                # Tidak perlu lagi mengirim bmkg_weather_forecast, local_events_calendar, mudik_calendar_info
+                # karena akan diambil oleh Langchain Tool di ai_service
             }
             
-            # Panggil fungsi logic
-            result = planning_logic.generate_staffing_forecast(payload)
+            ai_result = planning_logic.generate_staffing_forecast(payload_for_ai)
 
-            if "error" in result and result["error"]:
-                messages.error(request, f"Gagal mendapatkan forecast untuk periode {period['start']} - {period['end']}: {result.get('error', 'Unknown error')}")
-                all_ai_requests_successful = False
-                monthly_forecasts_details.append({"period": f"{period['start']} to {period['end']}", "error": result.get('error', 'Unknown error')})
-                continue
-            
-            forecast_output = result.get("forecast_result",{})
-            log_id = result.get("ai_request_log_id")
-            if log_id:
-                related_log_ids.append(log_id)
+            if "error" in ai_result and ai_result["error"]:
+                messages.error(request, f"Gagal mendapatkan forecast untuk periode {period['start']} - {period['end']}: {ai_result.get('error', 'Unknown error')}")
+                all_sub_forecasts_successful = False
+                monthly_forecast_details.append({"period": f"{period['start']} - {period['end']}", "error": ai_result.get('error', 'Kesalahan tidak diketahui')})
+                # Lanjutkan ke periode berikutnya, agar sebagian budget masih bisa dihitung
+            elif "forecast_result" in ai_result:
+                forecast_output = ai_result["forecast_result"]
+                log_id = ai_result.get("ai_request_log_id")
+                if log_id:
+                    forecast_log_ids_for_budget.append(log_id)
 
-            monthly_forecasts_details.append({
-                "period": f"{period['start']} to {period['end']}",
-                "log_id": log_id,
-                "details": forecast_output
-            })
+                cost_range = forecast_output.get("estimated_cost_range_rp", {})
+                current_min_cost = float(cost_range.get("min_cost", 0))
+                current_max_cost = float(cost_range.get("max_cost", 0))
 
-            cost_range = forecast_output.get("estimated_cost_range_rp", {})
-            total_min_cost_quarter += float(cost_range.get("min_cost", 0))
-            total_max_cost_quarter += float(cost_range.get("max_cost", 0))
+                aggregated_min_cost += current_min_cost
+                aggregated_max_cost += current_max_cost
+                
+                monthly_forecast_details.append({
+                    "period_label": period["start"].strftime("%B %Y"),
+                    "period_start_iso": period["start"].isoformat(),
+                    "period_end_iso": period["end"].isoformat(),
+                    "log_id": log_id,
+                    "predicted_staffing": forecast_output.get("predicted_staffing_demand", {}),
+                    "estimated_min_cost": current_min_cost,
+                    "estimated_max_cost": current_max_cost,
+                    "alerts_recommendations": forecast_output.get("peak_period_alerts_and_recommendations", "")
+                })
+            else: # Respon tidak dikenali
+                all_sub_forecasts_successful = False
+                monthly_forecast_details.append({"period": f"{period['start']} - {period['end']}", "error": "Respon AI tidak valid."})
 
-        if all_ai_requests_successful:
-             messages.success(request, "Perencanaan budget kuartalan berhasil dihitung.")
+
+        if all_sub_forecasts_successful:
+             messages.success(request, "Perencanaan budget berhasil dihitung berdasarkan forecast otomatis.")
         else:
-             messages.warning(request, "Beberapa forecast gagal, estimasi budget mungkin tidak lengkap.")
+             messages.warning(request, "Beberapa forecast bulanan gagal, estimasi budget mungkin tidak lengkap atau akurat.")
 
-        context['budget_details'] = {
-            "quarter_start": quarter_start_date.strftime("%Y-%m-%d"),
-            "total_min_cost_rp": total_min_cost_quarter,
-            "total_max_cost_rp": total_max_cost_quarter,
-            "monthly_breakdown": monthly_forecasts_details,
-            "all_successful": all_ai_requests_successful
+        # Terapkan penyesuaian biaya jika ada
+        adjusted_min_cost = aggregated_min_cost * (1 + cost_adjustment_percentage)
+        adjusted_max_cost = aggregated_max_cost * (1 + cost_adjustment_percentage)
+
+        context['budget_summary'] = {
+            "budget_period_start": start_period_date.strftime("%d %B %Y"),
+            "budget_period_end": end_period_date.strftime("%d %B %Y"),
+            "duration_months": number_of_months_to_plan,
+            "aggregated_min_cost_raw_rp": aggregated_min_cost,
+            "aggregated_max_cost_raw_rp": aggregated_max_cost,
+            "cost_adjustment_percentage_input": cost_adjustment_percentage * 100,
+            "total_adjusted_min_cost_rp": adjusted_min_cost,
+            "total_adjusted_max_cost_rp": adjusted_max_cost,
+            "monthly_breakdown": monthly_forecast_details,
+            "all_sub_forecasts_successful": all_sub_forecasts_successful,
+            "user_notes": budget_notes,
+            # "related_ai_log_ids": forecast_log_ids_for_budget # Jika ingin disimpan
         }
         
-        if BudgetPlan._meta.app_label == 'planning' and all_ai_requests_successful: # Pastikan model ada dan semua berhasil
+        # Opsional: Simpan BudgetPlan ke DB
+        if BudgetPlan._meta.app_label == 'planning': # Pastikan model BudgetPlan ada di app 'planning'
             try:
+                budget_plan_name = f"Rencana Budget {partner.nama_faskes} ({start_period_date.strftime('%b %Y')} - {end_period_date.strftime('%b %Y')})"
+                if budget_notes:
+                    budget_plan_name += f" - {budget_notes[:30]}" 
+                
                 BudgetPlan.objects.create(
                     faskes_id_temp=faskes_id,
-                    plan_name=f"Budget Kuartal {quarter_start_date.strftime('%B %Y')}",
-                    period_start=quarter_start_date,
-                    period_end=periods[-1]['end'],
-                    total_estimated_cost_min=total_min_cost_quarter,
-                    total_estimated_cost_max=total_max_cost_quarter,
-                    notes=f"Agregasi forecast. Rincian: {json.dumps(monthly_forecasts_details, default=str)}",
-                    # related_ai_log_ids_json=related_log_ids # Jika ada field ini di model
+                    plan_name=budget_plan_name,
+                    period_start=start_period_date,
+                    period_end=end_period_date,
+                    total_estimated_cost_min=adjusted_min_cost,
+                    total_estimated_cost_max=adjusted_max_cost,
+                    notes=f"Catatan Pengguna: {budget_notes}\nPenyesuaian Biaya: {cost_adjustment_percentage*100}%\n\nDetail Bulanan:\n{json.dumps(monthly_forecast_details, default=str)}",
+                    # related_ai_log_ids_json=forecast_log_ids_for_budget
                 )
-                messages.info(request, "Rencana budget telah disimpan.")
+                messages.info(request, "Rencana budget telah disimpan ke sistem.")
             except Exception as e:
-                messages.error(request, f"Gagal menyimpan rencana budget: {e}")
+                messages.error(request, f"Gagal menyimpan rencana budget ke database: {e}")
 
     return render(request, 'budget_planning_form.html', context)
-
 
 # @login_required
 def export_forecast_data_csv(request):
@@ -319,3 +448,48 @@ def export_forecast_data_csv(request):
             feedback.get('qualitative_feedback')
         ])
     return response
+
+# @login_required # Sesuaikan dengan autentikasi Faskes/Perencana
+def disaster_risk_dashboard_view(request):
+    faskes_id = get_current_faskes_id(request) # Untuk konteks Faskes saat ini
+    
+    data = planning_logic.get_disaster_risk_dashboard_data()
+    
+    context = {
+        'faskes_id': faskes_id, # Untuk base template jika perlu
+        'active_disaster_events': data.get("active_disaster_events"),
+        'page_title': "Dashboard Penilaian Risiko Bencana"
+    }
+    return render(request, 'disaster_risk_dashboard.html', context)
+
+# @login_required
+def disaster_event_detail_for_planning_view(request, event_id):
+    faskes_id = get_current_faskes_id(request)
+    
+    event, error = planning_logic.get_disaster_event_planning_details(event_id)
+    if error:
+        messages.error(request, error)
+        return redirect('planning:disaster_dashboard') # Kembali ke dashboard risiko
+
+    context = {
+        'faskes_id': faskes_id,
+        'event': event,
+        'page_title': f"Detail Risiko: {event.disaster_type if event else 'Error'}"
+    }
+    return render(request, 'disaster_event_detail.html', context)
+
+# @login_required
+@require_POST # Hanya izinkan trigger via POST
+def trigger_disaster_analysis_view(request, event_id):
+    faskes_id = get_current_faskes_id(request) # Validasi kepemilikan jika perlu
+    
+    result = planning_logic.trigger_emergency_event_ai_analysis(event_id)
+    
+    if result and result.get("success"):
+        messages.success(request, result.get("message", "Analisis AI berhasil dijalankan."))
+    elif result and result.get("error"):
+        messages.error(request, result.get("error", "Gagal menjalankan analisis AI."))
+    else:
+        messages.warning(request, "Hasil analisis AI tidak diketahui.")
+        
+    return redirect('planning:disaster_event_detail', event_id=event_id)
