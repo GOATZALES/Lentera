@@ -102,7 +102,18 @@ def create_dummy_data():
     
     for faskes, dept_names in created_faskes:
         for dept_name in dept_names:
+            dept_username = f"admin_{faskes.nama_faskes.lower().replace(' ', '')}_{dept_name.lower().replace(' ', '')}"
+            departemen_user, user_created = User.objects.get_or_create(
+                username=dept_username,
+                defaults={
+                    'email': f"{dept_username}@example.com",
+                    'password': 'password123', # Set a default password
+                    'first_name': f"{dept_name} Admin",
+                    'last_name': f"{faskes.nama_faskes}"
+                }
+            )
             departemen, created = Departemen.objects.get_or_create(
+                user=departemen_user,
                 faskes=faskes,
                 nama_departemen=dept_name,
                 defaults={
