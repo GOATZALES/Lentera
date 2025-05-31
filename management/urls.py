@@ -11,6 +11,8 @@ from .views import (
 
 from . import faskes_views
 
+from . import management_ai_services
+
 app_name = "management"
 
 urlpatterns = [
@@ -48,4 +50,9 @@ urlpatterns = [
     # path('reports/performance/', faskes_views.performance_report, name='performance_report'),
     # path('reports/attendance/', faskes_views.attendance_report, name='attendance_report'),
     # path('reports/export/', faskes_views.export_reports, name='export_reports'),
+
+    path('upload/', management_ai_services.upload_certificate_form, name='upload_form'),
+    path('process/', management_ai_services.process_certificate_image, name='process_image'),
+    path('categories/', management_ai_services.get_categories, name='get_categories'),
+    path('results/', management_ai_services.certificate_results, name='results'),
 ]

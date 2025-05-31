@@ -3,8 +3,10 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from datetime import datetime, timedelta, time
 import random
+import uuid
 
-from .models import Nakes, Faskes, Departemen, Shift, ShiftAssignment, ReviewNakes
+from .models import Nakes, Shift, ShiftAssignment, ReviewNakes
+from authentication.models import Faskes, Departemen
 
 def create_dummy_data():
     """Membuat data dummy untuk testing aplikasi"""
@@ -34,43 +36,73 @@ def create_dummy_data():
             tanggal_lahir=datetime(1990, 5, 15).date(),
             jenis_kelamin='L',
             profesi='Perawat',
-            status='Avaiable',
+            status='Available',  # Perbaiki typo 'Avaiable' -> 'Available'
             nomor_registrasi='STR123456789',
             tahun_pengalaman=5,
             kategori_kualifikasi='Perawat Umum',
             log_ketersediaan_menit=2400  # 40 jam
         )
     
-    # 3. Create Faskes
+    # 3. Create Faskes - Sesuaikan dengan struktur model yang baru
     faskes_data = [
         {
+            'faskes_id_internal': 'JMC001',
             'nama': 'RS. Jakarta Medical Center',
-            'alamat': 'Jl. Sudirman No. 1, Jakarta Pusat',
-            'tipe': 'Rumah Sakit',
+            'jenis': 'Rumah Sakit Umum',
+            'alamat_jalan': 'Jl. Sudirman No. 1',
+            'alamat_kelurahan_desa': 'Karet Tengsin',
+            'alamat_kecamatan': 'Tanah Abang',
+            'alamat_kota_kabupaten': 'Jakarta Pusat',
+            'alamat_provinsi': 'DKI Jakarta',
+            'alamat_kode_pos': '10220',
             'departemen': ['IGD', 'ICU', 'Bedah', 'Penyakit Dalam']
         },
         {
+            'faskes_id_internal': 'PMT001',
             'nama': 'Puskesmas Menteng',
-            'alamat': 'Jl. Menteng Raya No. 45, Jakarta Pusat',
-            'tipe': 'Puskesmas',
+            'jenis': 'Puskesmas',
+            'alamat_jalan': 'Jl. Menteng Raya No. 45',
+            'alamat_kelurahan_desa': 'Menteng',
+            'alamat_kecamatan': 'Menteng',
+            'alamat_kota_kabupaten': 'Jakarta Pusat',
+            'alamat_provinsi': 'DKI Jakarta',
+            'alamat_kode_pos': '10310',
             'departemen': ['Poli Umum', 'KIA', 'Gigi']
         },
         {
+            'faskes_id_internal': 'KSB001',
             'nama': 'Klinik Sehat Bersama',
-            'alamat': 'Jl. Kemang No. 88, Jakarta Selatan',
-            'tipe': 'Klinik',
+            'jenis': 'Klinik Pratama',
+            'alamat_jalan': 'Jl. Kemang No. 88',
+            'alamat_kelurahan_desa': 'Kemang Selatan',
+            'alamat_kecamatan': 'Mampang Prapatan',
+            'alamat_kota_kabupaten': 'Jakarta Selatan',
+            'alamat_provinsi': 'DKI Jakarta',
+            'alamat_kode_pos': '12560',
             'departemen': ['Poli Umum', 'Laboratorium']
         },
         {
+            'faskes_id_internal': 'RSCM001',
             'nama': 'RS. Cipto Mangunkusumo',
-            'alamat': 'Jl. Diponegoro No. 71, Jakarta Pusat',
-            'tipe': 'Rumah Sakit',
+            'jenis': 'Rumah Sakit Umum',
+            'alamat_jalan': 'Jl. Diponegoro No. 71',
+            'alamat_kelurahan_desa': 'Kenari',
+            'alamat_kecamatan': 'Senen',
+            'alamat_kota_kabupaten': 'Jakarta Pusat',
+            'alamat_provinsi': 'DKI Jakarta',
+            'alamat_kode_pos': '10430',
             'departemen': ['IGD', 'ICU', 'Bedah', 'Anak', 'Kandungan']
         },
         {
+            'faskes_id_internal': 'KPS001',
             'nama': 'Klinik Pratama Sehat',
-            'alamat': 'Jl. Gatot Subroto No. 123, Jakarta Selatan',
-            'tipe': 'Klinik',
+            'jenis': 'Klinik Pratama',
+            'alamat_jalan': 'Jl. Gatot Subroto No. 123',
+            'alamat_kelurahan_desa': 'Kuningan Timur',
+            'alamat_kecamatan': 'Setiabudi',
+            'alamat_kota_kabupaten': 'Jakarta Selatan',
+            'alamat_provinsi': 'DKI Jakarta',
+            'alamat_kode_pos': '12950',
             'departemen': ['Poli Umum', 'Gigi', 'KIA']
         }
     ]
@@ -78,15 +110,37 @@ def create_dummy_data():
     created_faskes = []
     for faskes_info in faskes_data:
         faskes, created = Faskes.objects.get_or_create(
-            nama_faskes=faskes_info['nama'],
+            faskes_id_internal=faskes_info['faskes_id_internal'],
             defaults={
-                'alamat': faskes_info['alamat'],
-                'tipe_faskes': faskes_info['tipe'],
-                'nomor_telepon': f'021-{random.randint(1000000, 9999999)}',
-                'email': f"admin@{faskes_info['nama'].lower().replace(' ', '').replace('.', '')}.com"
+                'nama_faskes': faskes_info['nama'],
+                'jenis_faskes': faskes_info['jenis'],
+                'alamat_jalan': faskes_info['alamat_jalan'],
+                'alamat_kelurahan_desa': faskes_info['alamat_kelurahan_desa'],
+                'alamat_kecamatan': faskes_info['alamat_kecamatan'],
+                'alamat_kota_kabupaten': faskes_info['alamat_kota_kabupaten'],
+                'alamat_provinsi': faskes_info['alamat_provinsi'],
+                'alamat_kode_pos': faskes_info['alamat_kode_pos'],
+                'koordinat_latitude': -6.2 + random.uniform(-0.1, 0.1),  # Random Jakarta coordinates
+                'koordinat_longitude': 106.8 + random.uniform(-0.1, 0.1),
+                'nomor_izin_operasional': f"IZN-{faskes_info['faskes_id_internal']}-2024",
+                'pic_nama': f"Dr. Admin {faskes_info['nama'].split('.')[1] if '.' in faskes_info['nama'] else faskes_info['nama']}",
+                'pic_telepon': f'021-{random.randint(1000000, 9999999)}',
+                'pic_email': f"admin@{faskes_info['faskes_id_internal'].lower()}.com",
+                'ops_hari': 'Senin - Minggu',
+                'ops_jam_buka': time(6, 0),
+                'ops_jam_tutup': time(23, 59),
+                'ops_catatan': 'Layanan 24/7 untuk IGD',
+                'kapasitas_info_json': {
+                    'tempat_tidur': random.randint(50, 200),
+                    'poli_aktif': len(faskes_info['departemen'])
+                },
+                'layanan_unggulan_json': faskes_info['departemen'][:2],  # First 2 departments as featured
+                'is_active_partner': True
             }
         )
         created_faskes.append((faskes, faskes_info['departemen']))
+        if created:
+            print(f"Created Faskes: {faskes.nama_faskes}")
     
     # 4. Create Departemen dan Shifts
     shift_templates = [
@@ -102,21 +156,28 @@ def create_dummy_data():
     
     for faskes, dept_names in created_faskes:
         for dept_name in dept_names:
-            dept_username = f"admin_{faskes.nama_faskes.lower().replace(' ', '')}_{dept_name.lower().replace(' ', '')}"
+            # Create department user
+            dept_username = f"admin_{faskes.faskes_id_internal.lower()}_{dept_name.lower().replace(' ', '')}"
             departemen_user, user_created = User.objects.get_or_create(
                 username=dept_username,
                 defaults={
                     'email': f"{dept_username}@example.com",
-                    'password': 'password123', # Set a default password
                     'first_name': f"{dept_name} Admin",
                     'last_name': f"{faskes.nama_faskes}"
                 }
             )
+            
+            # Set password for new users
+            if user_created:
+                departemen_user.set_password('password123')
+                departemen_user.save()
+            
+            # Create departemen
             departemen, created = Departemen.objects.get_or_create(
                 user=departemen_user,
-                faskes=faskes,
-                nama_departemen=dept_name,
                 defaults={
+                    'faskes': faskes,
+                    'nama_departemen': dept_name,
                     'jam_buka': time(6, 0),
                     'jam_tutup': time(0, 0)
                 }
@@ -159,7 +220,6 @@ def create_dummy_data():
                     )
     
     # 5. Create historical assignments for evaluation data
-    # Create more shifts for better evaluation data
     six_months_ago = timezone.now().date() - timedelta(days=180)
     ratings = [3, 3, 4, 4, 4, 5, 5, 5, 4, 3, 5, 4, 4, 5, 4]  # Variasi rating
     comments = [
@@ -190,11 +250,27 @@ def create_dummy_data():
         random_faskes, dept_names = random.choice(created_faskes)
         random_dept_name = random.choice(dept_names)
         
+        # Get or create the departemen user first
+        dept_username = f"admin_{random_faskes.faskes_id_internal.lower()}_{random_dept_name.lower().replace(' ', '')}"
+        departemen_user, user_created = User.objects.get_or_create(
+            username=dept_username,
+            defaults={
+                'email': f"{dept_username}@example.com",
+                'first_name': f"{random_dept_name} Admin",
+                'last_name': f"{random_faskes.nama_faskes}"
+            }
+        )
+        
+        if user_created:
+            departemen_user.set_password('password123')
+            departemen_user.save()
+        
         # Get or create the departemen
         departemen, _ = Departemen.objects.get_or_create(
-            faskes=random_faskes,
-            nama_departemen=random_dept_name,
+            user=departemen_user,
             defaults={
+                'faskes': random_faskes,
+                'nama_departemen': random_dept_name,
                 'jam_buka': time(6, 0),
                 'jam_tutup': time(0, 0)
             }
@@ -226,10 +302,15 @@ def create_dummy_data():
             datetime.combine(shift.tanggal_shift, shift.jam_selesai)
         )
         
+        # Handle cross-midnight shifts
+        if shift.jam_selesai < shift.jam_mulai:
+            clock_out_time += timedelta(days=1)
+        
         assignment = ShiftAssignment.objects.create(
             shift=shift,
             nakes=nakes,
             status_assignment='Completed',
+            waktu_penugasan=clock_in_time - timedelta(hours=random.randint(1, 48)),
             waktu_nakes_menerima=clock_in_time - timedelta(hours=random.randint(1, 48)),
             waktu_clock_in=clock_in_time,
             waktu_clock_out=clock_out_time,

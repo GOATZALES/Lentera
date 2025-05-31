@@ -184,17 +184,20 @@
                         {% endif %}
                     </div>
                     <div class="skills-grid">
+                        {# Only loop and display skills that are in current_skills #}
                         {% for value, label in skills %}
-                        <label class="skill-item" for="skill_{{ category }}_{{ forloop.counter }}">
-                            <input type="checkbox" 
-                                   name="skills" 
-                                   value="{{ value }}" 
-                                   class="skill-checkbox" 
-                                   id="skill_{{ category }}_{{ forloop.counter }}" 
-                                   {% if value in current_skills %}checked{% endif %}>
-                            <i class="{% if category == 'profesi_umum' %}fas fa-user-md{% elif category == 'spesialisasi' %}fas fa-star{% elif category == 'sertifikasi' %}fas fa-certificate{% else %}fas fa-cogs{% endif %} skill-icon"></i>
-                            <span>{{ label }}</span>
-                        </label>
+                            {% if value in current_skills %}
+                                <label class="skill-item" for="skill_{{ category }}_{{ forloop.counter }}">
+                                    <input type="checkbox" 
+                                           name="skills" 
+                                           value="{{ value }}" 
+                                           class="skill-checkbox" 
+                                           id="skill_{{ category }}_{{ forloop.counter }}" 
+                                           checked> {# Always checked if displayed #}
+                                    <i class="{% if category == 'profesi_umum' %}fas fa-user-md{% elif category == 'spesialisasi' %}fas fa-star{% elif category == 'sertifikasi' %}fas fa-certificate{% else %}fas fa-cogs{% endif %} skill-icon"></i>
+                                    <span>{{ label }}</span>
+                                </label>
+                            {% endif %}
                         {% endfor %}
                     </div>
                 </div>

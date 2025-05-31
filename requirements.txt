@@ -9,3 +9,4 @@ google-generativeai
 python-dateutil
 langchain
 langchain-google-genai
+pillow

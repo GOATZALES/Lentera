@@ -15,6 +15,47 @@ import json
 from authentication.models import Departemen, Faskes
 from .models import Nakes, Shift, ShiftAssignment, ReviewNakes, NakesSkill
 
+def get_current_department():
+    """
+    Mengambil departemen untuk testing frontend departemen
+    Menggunakan departemen IGD dari RS Jakarta Medical Center sebagai default
+    """
+    try:
+        # Ambil departemen IGD dari RS Jakarta Medical Center
+        # Berdasarkan pattern dari dummy data: admin_jmc001_igd
+        user_to_load = User.objects.get(username='admin_jmc001_igd')
+        departemen = Departemen.objects.get(user=user_to_load)
+        return departemen
+    except (User.DoesNotExist, Departemen.DoesNotExist):
+        print("Departemen IGD RS Jakarta Medical Center tidak ditemukan. Mencoba departemen lain...")
+        
+        # Coba ambil departemen pertama yang ada
+        try:
+            departemen = Departemen.objects.first()
+            if departemen:
+                print(f"Menggunakan departemen: {departemen.nama_departemen} - {departemen.faskes.nama_faskes}")
+                return departemen
+        except:
+            pass
+        
+        print("Tidak ada departemen yang ditemukan. Pastikan data dummy sudah dibuat.")
+        print("Menjalankan create_dummy_data()...")
+        create_dummy_data()
+        
+        # Coba lagi setelah membuat dummy data
+        try:
+            user_to_load = User.objects.get(username='admin_jmc001_igd')
+            departemen = Departemen.objects.get(user=user_to_load)
+            return departemen
+        except (User.DoesNotExist, Departemen.DoesNotExist):
+            # Jika masih gagal, ambil departemen pertama yang ada
+            departemen = Departemen.objects.first()
+            if departemen:
+                print(f"Menggunakan departemen: {departemen.nama_departemen} - {departemen.faskes.nama_faskes}")
+                return departemen
+            else:
+                raise Exception("Gagal membuat atau menemukan departemen dummy")
+
 def departemen_dashboard(request):
     """
     Dashboard utama Departemen dengan overview operasional
@@ -84,7 +125,7 @@ def departemen_dashboard(request):
 def kelola_lamaran(request):
     
     try:
-        departemen = Departemen.objects.get(department_id="857e4742cae74ef6ab90d9918a48be5e")
+        departemen = get_current_department()
     except Departemen.DoesNotExist:
         messages.error(request, 'Akses ditolak. Anda bukan Departemen yang terdaftar.')
         return redirect('management:login')
