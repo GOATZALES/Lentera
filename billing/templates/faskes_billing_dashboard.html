@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategi Harga - Lentera HealthConnect</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+        :root {
+            --font-primary: 'Poppins', sans-serif;
+            --color-text: #4A5568; /* gray-700 */
+            --color-text-dark: #2D3748; /* gray-800 */
+            --color-text-light: #718096; /* gray-600 */
+            --color-primary: #4A90E2; /* Biru yang bagus */
+            --color-secondary: #7B61FF; /* Ungu lembut */
+            --color-premium: #FFC107; /* Emas untuk premium */
+            --color-3t: #28a745; /* Hijau untuk 3T */
+            --color-standard: #4facfe; /* Biru muda untuk standard */
+            --bg-light: #F7FAFC; /* gray-100 */
+            --bg-section: linear-gradient(135deg, #E0F2FE 0%, #FFF0F5 100%); /* Gradient latar belakang halus */
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 20px 30px -15px rgba(0, 0, 0, 0.1);
+            --card-hover-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.12), 0 25px 35px -15px rgba(0, 0, 0, 0.15);
+            --border-radius: 16px;
+        }
+
+        body {
+            font-family: var(--font-primary);
+            background: var(--bg-section);
+            color: var(--color-text);
+            line-height: 1.7;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .pricing-header .icon {
+            font-size: 3rem;
+            color: var(--color-primary);
+            margin-bottom: 10px;
+            /* Menggunakan ikon kartu kredit seperti di gambar */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234A90E2'%3E%3Cpath d='M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 1.99 2H20c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4V8h16v10zm-1-8H5V9h14v1z'/%3E%3C/svg%3E");
+            width: 60px;
+            height: 45px;
+            background-repeat: no-repeat;
+            background-size: contain;
+            display: inline-block;
+            filter: drop-shadow(0 2px 4px rgba(74,144,226,0.4));
+        }
+
+
+        .pricing-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--color-text-dark);
+            margin-bottom: 5px;
+        }
+
+        .pricing-tiers {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .tier {
+            background-color: #fff;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            padding: 30px;
+            width: 100%;
+            max-width: 360px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            position: relative; /* Untuk tag */
+        }
+
+        .tier:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--card-hover-shadow);
+        }
+
+        .tier-icon {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #fff;
+        }
+        
+        .tier-3t .tier-icon { background-color: #FFD700; /* Emas untuk matahari */ } /* Kuning untuk Social Impact */
+        .tier-standard .tier-icon { background-color: var(--color-standard); }
+        .tier-premium .tier-icon { background-color: var(--color-premium); }
+
+        .tier-name {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-text-dark);
+            margin-bottom: 10px;
+        }
+
+        .tier-price {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #E2E8F0; /* gray-300 */
+        }
+        .tier-3t .tier-price { color: var(--color-3t); }
+        .tier-standard .tier-price { color: var(--color-standard); }
+        .tier-premium .tier-price { color: var(--color-premium); }
+        .tier-price small {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--color-text-light);
+        }
+
+        .tier-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 25px 0;
+            flex-grow: 1; /* Agar tombol tetap di bawah */
+        }
+
+        .tier-features li {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            color: var(--color-text-light);
+        }
+
+        .tier-features li i {
+            color: #34D399; /* green-400 */
+            margin-right: 10px;
+            margin-top: 4px; /* Penyesuaian vertikal ikon centang */
+            font-size: 0.9em;
+        }
+
+        .tier-button {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-top: auto; /* Mendorong tombol ke bawah */
+        }
+
+        .tier-3t .tier-button { background-color: var(--color-3t); color: #fff; }
+        .tier-standard .tier-button { background-color: var(--color-standard); color: #fff; }
+        .tier-premium .tier-button { background-color: var(--color-premium); color: var(--color-text-dark); }
+        
+        .tier-button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        /* Highlight Premium Tier */
+        .tier-premium {
+            transform: scale(1.05); /* Sedikit lebih besar */
+            box-shadow: 0 20px 40px -10px rgba(255, 193, 7, 0.3), 0 10px 20px -10px rgba(0,0,0,0.1); /* Shadow lebih menonjol */
+            border: 2px solid var(--color-premium);
+        }
+        .tier-premium:hover {
+            transform: scale(1.08) translateY(-8px);
+        }
+
+        /* Social Impact Tag */
+        .social-impact-tag {
+            position: absolute;
+            top: 15px;
+            right: -35px; /* Mulai dari luar sedikit */
+            background-color: #10B981; /* Hijau cerah */
+            color: white;
+            padding: 5px 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            transform: rotate(45deg);
+            transform-origin: top right;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            overflow: hidden; /* Untuk efek pita */
+            letter-spacing: 0.5px;
+        }
+         .tier-3t {
+            overflow: hidden; /* Penting agar tag tidak keluar dari card dengan aneh */
+        }
+
+
+        /* Modal Styling */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-hover-shadow);
+            width: 100%;
+            max-width: 500px;
+            text-align: left;
+            transform: scale(0.95);
+            transition: transform 0.3s ease-in-out;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        .modal-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--color-text-dark);
+            margin-bottom: 15px;
+            border-bottom: 1px solid #E2E8F0;
+            padding-bottom: 15px;
+        }
+        .modal-body p {
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+        .modal-body ul {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 20px;
+        }
+        .modal-body ul li {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: var(--color-text-light);
+        }
+        .modal-body ul li i {
+            color: #34D399;
+            margin-right: 10px;
+            margin-top: 4px;
+        }
+        .modal-close-btn {
+            display: block;
+            margin-top: 25px;
+            padding: 10px 20px;
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            float: right; /* Tombol tutup di kanan */
+        }
+        .modal-close-btn:hover {
+            background-color: #357ABD; /* Warna lebih gelap saat hover */
+        }
+
+        @media (max-width: 992px) {
+            .tier-premium {
+                transform: scale(1); /* Hilangkan pembesaran default di mobile */
+            }
+            .tier-premium:hover {
+                 transform: translateY(-8px) scale(1.02); /* Efek hover tetap ada */
+            }
+        }
+        @media (max-width: 768px) {
+            .pricing-tiers {
+                flex-direction: column;
+                align-items: center;
+            }
+            .tier {
+                max-width: 450px; /* Lebihkan sedikit untuk mobile */
+            }
+            .pricing-header h1 { font-size: 2rem; }
+            .tier-name { font-size: 1.4rem; }
+            .tier-price { font-size: 1.6rem; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="pricing-header">
+        <div class="icon"></div>
+        <h1>Pricing Strategy</h1>
+    </header>
+
+    <section class="pricing-tiers">
+        <!-- 3T Regions Tier -->
+        <div class="tier tier-3t" data-tier-id="3t_regions">
+            <div class="social-impact-tag">Social Impact</div>
+            <div class="tier-icon"><i class="fas fa-globe-asia"></i></div>
+            <h2 class="tier-name">3T Regions Tier</h2>
+            <p class="tier-price">FREE - 1% <small>platform fee</small></p>
+            <ul class="tier-features">
+                <li><i class="fas fa-check-circle"></i> Platform fee hanya 1% untuk daerah 3T</li>
+                <li><i class="fas fa-check-circle"></i> Gratis untuk emergency response</li>
+                <li><i class="fas fa-check-circle"></i> Basic AI forecasting included</li>
+                <li><i class="fas fa-check-circle"></i> Priority matching untuk underserved areas</li>
+                <li><i class="fas fa-check-circle"></i> Subsidized training programs</li>
+            </ul>
+            <button class="tier-button">Pilih Tier 3T</button>
+        </div>
+
+        <!-- Standard Tier -->
+        <div class="tier tier-standard" data-tier-id="standard">
+            <div class="tier-icon"><i class="fas fa-building"></i></div>
+            <h2 class="tier-name">Standard Tier</h2>
+            <p class="tier-price">2-3% <small>platform fee per transaksi</small></p>
+            <ul class="tier-features">
+                <li><i class="fas fa-check-circle"></i> Platform fee 2-3% per transaction</li>
+                <li><i class="fas fa-check-circle"></i> Standard matching algorithm</li>
+                <li><i class="fas fa-check-circle"></i> Basic analytics dashboard</li>
+                <li><i class="fas fa-check-circle"></i> Email support</li>
+                <li><i class="fas fa-check-circle"></i> Standard payment processing</li>
+            </ul>
+            <button class="tier-button">Pilih Tier Standard</button>
+        </div>
+
+        <!-- Premium Tier -->
+        <div class="tier tier-premium" data-tier-id="premium">
+            <div class="tier-icon"><i class="fas fa-star"></i></div>
+            <h2 class="tier-name">Premium Tier</h2>
+            <p class="tier-price">3-5% + Rp 2M/bulan</p>
+            <ul class="tier-features">
+                <li><i class="fas fa-check-circle"></i> Advanced AI forecasting & analytics</li>
+                <li><i class="fas fa-check-circle"></i> Priority matching & faster response</li>
+                <li><i class="fas fa-check-circle"></i> Custom reporting & dashboard</li>
+                <li><i class="fas fa-check-circle"></i> Dedicated account manager</li>
+                <li><i class="fas fa-check-circle"></i> 24/7 phone support</li>
+            </ul>
+            <button class="tier-button">Pilih Tier Premium</button>
+        </div>
+    </section>
+
+    <!-- Modal Structure (satu modal, konten dinamis) -->
+    <div id="tierModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="modalTierName" class="modal-title">Nama Tier</h2>
+            <div class="modal-body">
+                <p id="modalTierPrice"></p>
+                <p id="modalTierDescription"></p>
+                <h4>Fitur Unggulan:</h4>
+                <ul id="modalTierFeatures">
+                    <!-- Fitur akan diisi oleh JavaScript -->
+                </ul>
+                <p><i>Informasi lebih lanjut mengenai pendaftaran atau perubahan tier dapat menghubungi tim sales kami.</i></p>
+            </div>
+            <button id="modalCloseButton" class="modal-close-btn">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tiers = document.querySelectorAll('.tier');
+            const modalOverlay = document.getElementById('tierModal');
+            const modalTierName = document.getElementById('modalTierName');
+            const modalTierPrice = document.getElementById('modalTierPrice');
+            const modalTierDescription = document.getElementById('modalTierDescription');
+            const modalTierFeatures = document.getElementById('modalTierFeatures');
+            const modalCloseButton = document.getElementById('modalCloseButton');
+
+            // Data untuk modal (bisa juga diambil dari atribut data-* di HTML)
+            const tierData = {
+                '3t_regions': {
+                    name: '3T Regions Tier',
+                    price: 'GRATIS dengan 1% Platform Fee per transaksi',
+                    description: 'Dirancang khusus untuk mendukung fasilitas kesehatan di daerah Tertinggal, Terdepan, dan Terluar (3T) dengan biaya minimal dan dampak sosial maksimal.',
+                    features: [
+                        'Platform fee hanya 1% untuk daerah 3T',
+                        'Akses gratis untuk respons darurat dan bencana',
+                        'Fitur dasar AI forecasting untuk perencanaan SDM',
+                        'Prioritas pencocokan nakes untuk area yang kurang terlayani',
+                        'Akses ke program pelatihan yang disubsidi untuk peningkatan kapasitas nakes lokal'
+                    ]
+                },
+                'standard': {
+                    name: 'Standard Tier',
+                    price: '2-3% Platform Fee per transaksi shift',
+                    description: 'Solusi ideal untuk faskes yang membutuhkan fleksibilitas dan fitur esensial untuk manajemen tenaga kesehatan on-demand.',
+                    features: [
+                        'Platform fee kompetitif 2-3% per transaksi shift',
+                        'Algoritma pencocokan standar yang efisien',
+                        'Dashboard analitik dasar untuk memantau penggunaan dan biaya',
+                        'Dukungan pelanggan melalui email',
+                        'Proses pembayaran standar dan terintegrasi'
+                    ]
+                },
+                'premium': {
+                    name: 'Premium Tier',
+                    price: '3-5% Platform Fee per transaksi + Biaya Langganan Rp 2.000.000 per bulan',
+                    description: 'Paket terlengkap untuk faskes yang membutuhkan insight mendalam, kustomisasi, dan dukungan penuh untuk optimasi workforce management.',
+                    features: [
+                        'AI forecasting dan analitik tingkat lanjut untuk prediksi permintaan yang sangat akurat',
+                        'Prioritas pencocokan nakes dengan respons lebih cepat',
+                        'Laporan dan dashboard yang dapat dikustomisasi sesuai kebutuhan faskes',
+                        'Dedicated account manager untuk pendampingan personal',
+                        'Dukungan telepon prioritas 24/7'
+                    ]
+                }
+            };
+
+            tiers.forEach(tierElement => {
+                tierElement.addEventListener('click', function () {
+                    const tierId = this.dataset.tierId;
+                    const data = tierData[tierId];
+
+                    if (data) {
+                        modalTierName.textContent = data.name;
+                        modalTierPrice.textContent = `Biaya: ${data.price}`;
+                        modalTierDescription.textContent = data.description;
+                        
+                        modalTierFeatures.innerHTML = ''; // Kosongkan list fitur sebelumnya
+                        data.features.forEach(featureText => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<i class="fas fa-check-circle"></i> ${featureText}`;
+                            modalTierFeatures.appendChild(li);
+                        });
+
+                        modalOverlay.classList.add('active');
+                    }
+                });
+            });
+
+            function closeModal() {
+                modalOverlay.classList.remove('active');
+            }
+
+            modalCloseButton.addEventListener('click', closeModal);
+            modalOverlay.addEventListener('click', function(event) {
+                if (event.target === modalOverlay) { // Hanya tutup jika klik di luar konten modal
+                    closeModal();
+                }
+            });
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape' && modalOverlay.classList.contains('active')) {
+                    closeModal();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
